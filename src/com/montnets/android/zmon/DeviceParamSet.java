@@ -1,0 +1,244 @@
+﻿package com.montnets.android.zmon;
+
+import cn.mw.p2p.Request.SafeRequest;
+import cn.mw.p2p.Request.SetDevParamRequest;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.Spinner;
+import android.widget.Toast;
+
+public class DeviceParamSet extends Activity {
+	
+	private String DevID = null;
+	private String ChannelNO = null;
+	private String Account = null;
+	private SharedPreferences sp;
+	private ImageButton imgbtnBack;
+	private Button btnSave;
+	private String loginSession = null;
+	private Spinner spinnerSleep;
+	private Spinner spinnerPerson;
+	private EditText etxtDevKey;
+	private CheckBox cbxRestart;
+	private Threadhandler thd;
+	private ProgressDialog dialog;
+	private String baseurlString;
+	private EditText etxtNewDeyKey;
+	private EditText DeviceName;
+	private EditText TimeLen;
+	
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(1);
+        setContentView(R.layout.deviceparamset); 
+        ExitApplication.getInstance().addActivity(this);
+        sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+        Account = sp.getString("userInfo", "").split(",")[0];
+        loginSession = sp.getString("userInfo", "").split(",")[2];
+        DevID = getIntent().getStringExtra("DevID").toString();
+        ChannelNO = getIntent().getStringExtra("ChannelNO").toString();
+        initUI();
+    }
+	private void initUI() {
+		imgbtnBack = (ImageButton) findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(new backOnClickListener());
+		//设备名称
+		DeviceName = (EditText)findViewById(R.id.deviceName);
+		DeviceName.setText(getIntent().getStringExtra("ChannelName").toString());
+		//设备密码
+		etxtNewDeyKey = (EditText)findViewById(R.id.hostnewpwd);
+		etxtDevKey = (EditText)findViewById(R.id.hostpwd);
+		//绑定休眠唤醒状态
+		spinnerSleep = (Spinner)findViewById(R.id.spinnerSleep);
+		ArrayAdapter<String> adapterSleep = new ArrayAdapter<String>(
+				DeviceParamSet.this, android.R.layout.simple_spinner_item,
+				MsgEnum.SLEEP_NAME);
+		adapterSleep.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinnerSleep.setAdapter(adapterSleep);
+		
+		//绑定同时观看人数
+		spinnerPerson = (Spinner)findViewById(R.id.spinnerPerson);
+		ArrayAdapter<String> adapterPerson = new ArrayAdapter<String>(
+				DeviceParamSet.this, android.R.layout.simple_spinner_item,
+				MsgEnum.PERSON);
+		adapterPerson.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinnerPerson.setAdapter(adapterPerson);
+		
+		//重启摄像机
+		cbxRestart = (CheckBox)findViewById(R.id.chkrestart);
+		
+		//设置录像时长
+		TimeLen = (EditText)findViewById(R.id.TimeLen);
+		TimeLen.setText(sp.getString("TimeLen", "5"));
+		
+		btnSave = (Button)findViewById(R.id.btnSave);
+		btnSave.setOnClickListener(new btnSaveOnClickListener());
+	}
+	
+	//返回
+	private final class backOnClickListener implements View.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			DeviceParamSet.this.finish();
+		}
+	}
+	
+	//保存
+	private final class btnSaveOnClickListener implements View.OnClickListener
+	{
+
+		@Override
+		public void onClick(View v) {
+			
+			dialog = ProgressDialog.show(DeviceParamSet.this, "", "正在提交数据，请等待...", true);
+			dialog.setCancelable(true);
+			baseurlString = P2pBaseUrl.BaseUrl(sp);
+			SafeRequest sr = new SafeRequest();
+			sr.setAccount(Account);
+			sr.setLoginSession(loginSession);
+			sr.setDevID(DevID);
+			//设备名称
+			String strDevName = DeviceName.getText().toString().trim();
+			if (!strDevName.equals("")) {
+				SetDevParamRequest spr = new SetDevParamRequest();
+				spr.setAccount(Account);
+				spr.setLoginSession(loginSession);
+				spr.setDevID(DevID);
+				spr.setChannelNo(Integer.parseInt(ChannelNO));
+				spr.setChannelName(strDevName);
+				thd = new Threadhandler(mHandler, spr, baseurlString, "SetDevName");
+				thd.start();
+			}
+			//设备密码
+			String strDevKey = etxtDevKey.getText().toString().trim();
+			String strNewDevKey = etxtNewDeyKey.getText().toString().trim();
+			if(!strDevKey.equals("") && !strNewDevKey.equals(""))
+			{
+				sr.setDevKey(strDevKey);
+				sr.setNewDevKey(strNewDevKey);
+				// 开启线程
+				thd = new Threadhandler(mHandler, sr, baseurlString, "SetDevKey");
+				thd.start();
+			}
+			//同时观看人数
+			Long maxlineIndex = spinnerPerson.getSelectedItemId();
+			String strPersonValue = MsgEnum.PERSON[maxlineIndex.intValue()];
+			if(!strPersonValue.equals("请选择"))
+			{
+				
+				sr.setChannelNo(Integer.parseInt(ChannelNO));
+				sr.setMaxLineNum(Integer.parseInt(strPersonValue));
+				// 开启线程
+				thd = new Threadhandler(mHandler, sr, baseurlString, "SetMaxLineNum");
+				thd.start();
+			}
+			//重启摄像机
+			if(cbxRestart.isChecked())
+			{
+				// 开启线程
+				thd = new Threadhandler(mHandler, sr, baseurlString, "RebootDev");
+				thd.start();
+			}
+			//设置录像时长
+			String strTimeLen = TimeLen.getText().toString().trim();
+			if (!strTimeLen.equals("")) {
+				sp.edit().putString("TimeLen", strTimeLen).commit();
+			}
+			
+			if(strDevName.equals("") && strDevKey.equals("") 
+					&& strPersonValue.equals("请选择") 
+					&& !cbxRestart.isChecked())
+			{
+				dialog.dismiss();
+			}
+		}
+		
+	}
+	
+    //=======================TODO 线程操作==============================
+    private final Handler mHandler = new Handler()
+    {
+    	public void handleMessage(Message msg)
+    	{
+			dialog.dismiss();
+			int msgID = msg.what;
+			switch (msgID) {
+			case MsgEnum.SUCCESS:
+				Toast.makeText(DeviceParamSet.this, "设备名称设置成功！", 0).show();
+				break;
+			case MsgEnum.SETDEVKEY_SUCCESS:
+				Toast.makeText(DeviceParamSet.this, "设备密码设置成功！", 0).show();
+				break;
+			case MsgEnum.SETMAXLINE_SUCCESS:
+				Toast.makeText(DeviceParamSet.this, "设备同时观看人数成功！", 0).show();
+				break;
+			case MsgEnum.SETDEVREBOOT_SUCCESS:
+				Toast.makeText(DeviceParamSet.this, "设备重启成功！", 0).show();
+				break;
+			case MsgEnum.SESSION_TIMEOUT:
+				Toast.makeText(DeviceParamSet.this, "SESSION超时！", 0).show();
+				break;
+			case MsgEnum.DEVICE_EXISTS_NULL:
+				Toast.makeText(DeviceParamSet.this, "设备不存在！", 0).show();
+				break;
+			case MsgEnum.ACCOUNT_NOT_EXIST:
+				Toast.makeText(DeviceParamSet.this, "用户不存在！", 0).show();
+				break;
+//			case MsgEnum.GETPARAM_SUCCESS:
+//				String res = msg.getData().getString("ParamResult").toString();
+//				System.out.println("返回结果：" + res.toString());
+//				DeviceName.setText(res);
+//				break;
+			case MsgEnum.PASSWORD_OLD_REEOR:
+				Toast.makeText(DeviceParamSet.this, "设备原始密码错误！", 0).show();
+				break;
+			case MsgEnum.GETPARAM_ERROR:
+				Toast.makeText(DeviceParamSet.this, "获取配置信息失败！", 0).show();
+				break;
+			case MsgEnum.SERVER_ERROR:
+				Toast.makeText(DeviceParamSet.this, "设置失败！", 0).show();
+				break;
+			default:
+				break;
+			}
+    	}
+	
+    };
+    
+//	/**
+//	 * 获取设备通道名称
+//	 */
+//	private void getDeviceChannelName() {
+//		
+//		GetDevParamRequest gpr = new GetDevParamRequest();
+//		gpr.setAccount(Account);
+//		gpr.setLoginSession(loginSession);
+//		gpr.setDevID(DevID);
+//		gpr.setChannelNo(Integer.parseInt(ChannelNO));
+//		gpr.setStreamType(1);
+//
+//		dialog = ProgressDialog.show(DeviceParamSet.this, "", "正在获取数据，请等待...", true);
+//		baseurlString = P2pBaseUrl.BaseUrl(sp);
+//		// 开启线程
+//		thd = new Threadhandler(mHandler, gpr, baseurlString, "MonGetDevName");
+//		thd.start();
+//		
+//	}
+		
+}

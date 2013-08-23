@@ -1,0 +1,542 @@
+﻿package com.montnets.android.zmon;
+
+import java.io.File;
+
+import org.ksoap2.serialization.PropertyInfo;
+import org.ksoap2.serialization.SoapObject;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Message;
+import android.os.Parcelable;
+import android.text.InputType;
+import android.util.DisplayMetrics;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
+import cn.mw.p2p.Request.LoginRequest;
+import cn.mw.p2p.Request.MonGetPwdRequest;
+import cn.mw.p2p.adpter.DeviceAdapter;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.Constant;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import cn.mw.p2p.unitily.WSUtils;
+import cn.mw.p2p.unitily.p2punitily;
+
+public class LoginActivity extends Activity {
+
+	private TextView loginbtn;
+	private TextView first_loginbtn;
+	private CheckBox saveUserInfochkBox;
+	private CheckBox saveUserpwd;
+	private EditText Account;
+	private EditText password;
+	private TextView set_btn;
+	private ImageButton forgetbtn;
+	private SharedPreferences sp;//配置
+	private Threadhandler thd;
+	private ProgressDialog dialog;
+	private AlertDialog.Builder builder;
+	private String baseurlString;//基本URL
+	private DeviceAdapter devDao;
+	
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+  
+       sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+        baseurlString = P2pBaseUrl.BaseUrl(sp);
+        
+        requestWindowFeature(1);
+        //设置竖屏
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        getScreenSize();
+        if (Constant.displayWidth == 720 && Constant.displayHeight == 1280
+        		|| Constant.displayWidth == 540 && Constant.displayHeight == 960
+        		|| Constant.displayWidth == 768 && Constant.displayHeight == 1184) {
+        	setContentView(R.layout.login_layout_720x1280); 
+		}else {
+			setContentView(R.layout.login_layout); 
+		}
+        ExitApplication.getInstance().addActivity(this);
+        CreateDeskIcon();
+        devDao = new DeviceAdapter(LoginActivity.this);
+        findviewID();
+        createDirs();
+    }
+    
+    private void findviewID()
+    {
+		this.loginbtn = (TextView) findViewById(R.id.loginbtn);
+		this.loginbtn.setOnClickListener(new loginListener());
+		
+		this.first_loginbtn = (TextView) findViewById(R.id.firstLogin);
+		this.first_loginbtn.setOnClickListener(new firstLoginListener());
+		
+		this.forgetbtn = (ImageButton)findViewById(R.id.forgetbtn);
+		this.forgetbtn.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View v) {
+				progressGetPwd();
+			}
+			
+		});
+		
+		this.Account = (EditText) findViewById(R.id.userName);
+		this.Account.setInputType(InputType.TYPE_TEXT_FLAG_CAP_WORDS | InputType.TYPE_TEXT_VARIATION_PERSON_NAME);
+		this.password = (EditText) findViewById(R.id.userPwd);
+		
+		Account.setText(sp.getString("userName", ""));
+		Account.setOnFocusChangeListener(new OnFocusChangeListener() {
+			
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				// TODO Auto-generated method stub
+				if(Account.hasFocus() != true){
+				String strAccount = Account.getText().toString().trim();
+				Account.setText(strAccount);
+				}
+			}
+		});
+		password.setText(sp.getString("password", ""));
+		this.set_btn = (TextView) findViewById(R.id.setbtn);
+		this.saveUserInfochkBox = (CheckBox) findViewById(R.id.login_checkbox);
+		this.saveUserpwd = (CheckBox) findViewById(R.id.login_checkpwd);
+		saveUserInfochkBox.setChecked(sp.getBoolean("isSaveUserID", false));
+		saveUserpwd.setChecked(sp.getBoolean("isSaveUserPWD", false));
+	    this.set_btn.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Intent intent = new Intent(LoginActivity.this,TabSysDevset.class);
+				startActivity(intent);
+				//new P2pSetServer().SetServerInfo(LoginActivity.this, sp);
+			}
+		});
+    }
+    
+    /**
+     * 登录
+     * @author Administrator
+     *
+     */
+    private final class loginListener implements View.OnClickListener
+    {
+    	String strAccount;
+    	String strPwd;
+		@Override
+		public void onClick(View v) {
+	        loginAccount();
+		}
+		
+		/**
+		 * 用户登录操作
+		 */
+	    private void loginAccount()
+	    {
+	    	sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+	        baseurlString = P2pBaseUrl.BaseUrl(sp);
+	        String baseurl=sp.getString("serverIP", "");
+	        System.out.println("ip----->" + baseurl);
+	    	
+			strAccount = Account.getText().toString().trim();
+			Account.setText(strAccount);
+			/*StringBuilder sb=new StringBuilder();  
+		       for(int i=0;i<strAccount.length();i++){  
+		        if(strAccount.charAt(i)!=' '){  
+		            sb.append(strAccount.charAt(i));  
+		        }  
+		       }  
+		       strAccount=sb.toString().trim(); */
+			//System.out.println("用户名"+strAccount);
+			strPwd = password.getText().toString().trim();
+			//System.out.println("输入密码"+strPwd);
+			if(strAccount.equals(""))
+			{
+				//Toast.makeText(LoginActivity.this, "用户账号不能为空！", 0).show();
+				Account.setError("用户账号不能为空！");
+				return;
+			}
+			if(strPwd.equals(""))
+			{
+				//Toast.makeText(LoginActivity.this, "密码不能为空！", 0).show();
+				password.setError("密码不能为空！");
+				return;
+			}
+			dialog = ProgressDialog.show(LoginActivity.this, "", "登录中，请等待...", true);
+			
+			new Thread(new Runnable() {
+				
+				@Override
+				public void run() {
+					// TODO Auto-generated method stub
+					dialog.setCancelable(true);
+
+					//开启线程
+					LoginRequest lr = new LoginRequest();
+					lr.setAccount(strAccount);
+					lr.setTelPassword(strPwd);
+					lr.setPwdType(0);
+					lr.setVersion("v1.0");
+					thd = new Threadhandler(mHandler, lr, baseurlString, devDao);
+					thd.start();
+					
+				}
+			}).start();
+			
+	    }
+    	
+    }
+    
+    //注册
+    private final class firstLoginListener implements View.OnClickListener
+    {
+
+		@Override
+		public void onClick(View v) {
+			Intent intent = new Intent(LoginActivity.this, RegActitivty1.class);
+			startActivity(intent);
+		}
+    	
+    }
+    
+    
+
+    
+    
+    //=======================TODO 线程操作==============================
+    private final Handler mHandler = new Handler()
+    {
+    	public void handleMessage(Message msg)
+    	{
+    		dialog.dismiss();
+    		int msgID = msg.what;
+    		switch(msgID)
+    		{
+    		    case -1:
+    		    	dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("连接服务器超时，请检查网络！").setPositiveButton("确认",null);
+					builder.create().show();
+    			break;
+				case MsgEnum.LOGIN_SUCCESS:		//登录成功
+					checkBoxset();
+					String loginSession = msg.getData().getString("LoginSession").toString();
+					String strUserAccount = Account.getText().toString().trim();
+					String strTemp = p2punitily.getInputDataType(strUserAccount.substring(0, 1));
+					String loginType = "0";//0为用户登录,1为设备登录
+					if(strTemp.equals("0"))
+					{
+						loginType = "1";
+					}
+					Intent intent =new Intent(LoginActivity.this,MainActivity.class);
+					sp.edit().putString("userInfo", strUserAccount + ","
+											+ password.getText().toString().trim() + ","
+											+ loginSession)
+							 .putString("loginType", loginType).commit();
+					startActivity(intent);
+					break;
+				case MsgEnum.USERNAME_NULL:		//用户名不存在
+					dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("用户帐号错误！").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+				case MsgEnum.PASSWORD_ERROR:	//密码错误
+					dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("密码错误！").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+				case MsgEnum.MCU_VERSION_DOWN:	//MCU版本过低
+					dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("MCU版本过低").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+				case MsgEnum.SERVER_ERROR:		//服务器数据异常
+					dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("连接超时，请确认服务器设置是否正确").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+				case MsgEnum.SUCCESS:
+					dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("获取密码成功").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+				case MsgEnum.SENDMESSAGE_ERROR:
+					dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("获取密码失败").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+				case MsgEnum.LOGIN_ERROR:
+					dialog.dismiss();
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("用户未注册").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+				default:
+					break;
+    		}
+    		
+    	}
+    };
+    
+    private final Handler mHandler2 = new Handler(){
+		public void handleMessage(Message msg){
+			dialog.dismiss();
+			switch(msg.what){
+			case -1:
+				builder = new AlertDialog.Builder(LoginActivity.this);
+				builder.setTitle("连接超时，请确认服务器设置是否正确").setPositiveButton("确认",null);
+				builder.create().show();
+				break;
+			case 0:
+				// success
+				builder = new AlertDialog.Builder(LoginActivity.this);
+				builder.setTitle("请求密码短信成功，请注意接收").setPositiveButton("确认",null);
+				builder.create().show();
+				break;
+			case 1:
+				builder = new AlertDialog.Builder(LoginActivity.this);
+				builder.setTitle("请求失败，用户账号未注册").setPositiveButton("确认",null);
+				builder.create().show();
+				break;
+			case 2:
+				builder = new AlertDialog.Builder(LoginActivity.this);
+				builder.setTitle("请求失败，短信发送不成功").setPositiveButton("确认",null);
+				builder.create().show();
+				break;
+			case 3:
+				builder = new AlertDialog.Builder(LoginActivity.this);
+				builder.setTitle("请求失败，用户已注销").setPositiveButton("确认",null);
+				builder.create().show();
+				break;
+				default:
+					builder = new AlertDialog.Builder(LoginActivity.this);
+					builder.setTitle("请求失败，未定义错误").setPositiveButton("确认",null);
+					builder.create().show();
+					break;
+			}
+		}
+	};
+    
+    /**
+     * 是否记住用户信息
+     */
+    private void checkBoxset()
+    {
+		//记住密码
+		if(saveUserpwd.isChecked())
+		{
+			sp.edit()
+			.putBoolean("isSaveUserPWD", true)
+			.putString("password",password.getText().toString().trim())
+			.commit();
+		}
+		else {
+			sp.edit()
+			.putBoolean("isSaveUserPWD", false)
+			.putString("password","")
+			.commit();
+		}
+    	//记住用户名
+		if(saveUserInfochkBox.isChecked())
+		{
+			sp.edit()
+			.putBoolean("isSaveUserID", true)
+			.putString("userName",Account.getText().toString().trim())
+			.commit();
+		}
+		else {
+			sp.edit()
+			.putBoolean("isSaveUserID", false)
+			.putBoolean("isSaveUserPWD", false)
+			.putString("userName","")
+			.putString("password","")
+			.commit();
+		}
+    }
+    
+    public void progressGetPwd() {
+    	// native check
+    	final String strAccount = Account.getText().toString().trim();
+		Account.setText(strAccount);
+		 sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+	        baseurlString = P2pBaseUrl.BaseUrl(sp);
+		if(strAccount.equals(""))
+		{
+			Account.setError("用户账号不能为空！");
+			//Toast.makeText(LoginActivity.this, "用户账号不能为空！", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		String strTemp = p2punitily.getInputDataType(strAccount.substring(0, 1));
+		if(strTemp.equals("0"))
+		{
+			builder = new AlertDialog.Builder(LoginActivity.this);
+			builder.setTitle("用户账号不合法")
+			.setMessage("仅注册用户可以使用找回密码功能")
+			.setPositiveButton("确认",null);
+			builder.create().show();
+			return;
+		}
+    	
+		// show dialog
+    	dialog = ProgressDialog.show(LoginActivity.this, "", "获取密码中，请等待...", true);
+		dialog.setCancelable(true);
+		
+		// create thread to do net invoke
+		new Thread(new Runnable(){
+
+			@Override
+			public void run() {
+				MonGetPwdRequest request = new MonGetPwdRequest();
+				request.setAccount(strAccount);
+				request.setPwdType(0);
+				
+				PropertyInfo pi = new PropertyInfo();
+				pi.setName("req");
+				pi.setType(request.getClass());
+				pi.setValue(request);
+				
+				SoapObject soapObject = WSUtils.wsRequestStruct(baseurlString, "MonGetPassword", pi, request, "MonGetPwdRequest");
+				Message msgMessage = mHandler2 .obtainMessage();
+				if (soapObject != null) {
+					Object objRes = (Object) soapObject.getProperty("Result");
+					msgMessage.what = Integer.parseInt(objRes.toString());
+				}
+				else {
+					msgMessage.what = -1;
+				}
+				mHandler2.sendMessage(msgMessage);
+			}
+			
+		}).start();
+	}
+
+	@Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if(keyCode == KeyEvent.KEYCODE_BACK) { //监控/拦截/屏蔽返回键
+			new AlertDialog.Builder(this)
+			.setTitle("提示")
+			.setMessage("您确定退出系统吗？")
+			.setPositiveButton("确定",new DialogInterface.OnClickListener() {
+						public void onClick(
+							DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+							ExitApplication.getInstance().exit();
+						}
+					})
+			.setNegativeButton("取消",new DialogInterface.OnClickListener() {
+						public void onClick(
+							DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+						}
+					}).setCancelable(false).show();
+            return true;
+        } else if(keyCode == KeyEvent.KEYCODE_MENU) {
+            //监控/拦截菜单键
+        } else if(keyCode == KeyEvent.KEYCODE_HOME) {
+            //由于Home键为系统键，此处不能捕获，需要重写onAttachedToWindow()
+        }
+        return super.onKeyDown(keyCode, event);
+    } 
+    
+    /**
+     * 创建目录
+     */
+    private void createDirs()
+    {
+		if(p2punitily.getSDPath() == null)
+		{
+			Toast.makeText(this, "没有SD卡或SD卡被拔出", 0).show();
+			return;
+		}
+		String mRoot = p2punitily.getSDPath() + "/" + P2pBaseUrl.DIR_ROOT;
+		String mRoot_image = mRoot + "/" + P2pBaseUrl.DIR_ROOT_IMAGE;
+		String mRoot_video = mRoot + "/" + P2pBaseUrl.DIR_ROOT_VIDEO;
+		File file_root = new File(mRoot);
+		if (!file_root.exists()) {
+			file_root.mkdirs();// 创建文件夹
+		}
+		File file_image = new File(mRoot_image);
+		if (!file_image.exists()) {
+			file_image.mkdirs();// 创建文件夹
+		}
+		File file_video = new File(mRoot_video);
+		if (!file_video.exists()) {
+			file_video.mkdirs();// 创建文件夹
+		}
+    }
+    
+    
+    /**
+     * 创建快捷方式
+     */
+    private void createDeskShortCut() {
+
+           //创建快捷方式的Intent
+           Intent shortcutIntent = new Intent("com.android.launcher.action.INSTALL_SHORTCUT");
+           //不允许重复创建
+           shortcutIntent.putExtra("duplicate",false);
+           //需要现实的名称
+           shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME,getString(R.string.app_name));
+           //快捷图片
+           Parcelable icon = Intent.ShortcutIconResource.fromContext(
+                         getApplicationContext(),R.drawable.icon);
+
+           shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE,icon);
+
+           Intent intent = new Intent(getApplicationContext(),LoginActivity.class);
+           //下面两个属性是为了当应用程序卸载时桌面 上的快捷方式会删除
+           intent.setAction("android.intent.action.MAIN");
+           intent.addCategory("android.intent.category.LAUNCHER");
+           //点击快捷图片，运行的程序主入口
+           shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT,intent);
+           //发送广播。OK
+           sendBroadcast(shortcutIntent);
+    }
+    
+    /**
+     * 创建桌面快捷方式
+     */
+    private void CreateDeskIcon()
+    {
+        boolean isFirst = sp.getBoolean("FirstSetUp", true);
+        if (isFirst) {
+        	Toast.makeText(this, "自动创建桌面快捷方式", 0).show();
+        	createDeskShortCut();
+			Toast.makeText(this, "创建[" + getString(R.string.app_name) + "]快捷方式成功!", 0).show();
+		}
+        sp.edit().putBoolean("FirstSetUp", false).commit();
+    }
+    
+    /**
+     * 获取屏幕尺寸
+     */
+    private void getScreenSize()
+    {
+    	DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        Constant.displayWidth = displayMetrics.widthPixels;
+        Constant.displayHeight = displayMetrics.heightPixels;
+    }
+}

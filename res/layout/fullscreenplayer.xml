@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/RL_barContent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <VideoView
+        android:id="@+id/vvPlayer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true" />
+
+    <RelativeLayout
+        android:id="@+id/RelativeLayout_Bar"
+        android:layout_width="fill_parent"
+        android:layout_height="60dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="0dp"
+        android:background="@drawable/realplaybar"
+        android:gravity="center" >
+
+        <ImageView
+            android:id="@+id/iv_alarm"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_marginLeft="0dp"
+            android:layout_marginTop="5dp" />
+
+        <TextView
+            android:id="@+id/tv_alarm"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/iv_alarm"
+            android:layout_marginLeft="0dip"
+            android:layout_marginTop="-5dip"
+            android:text="布防"
+            android:textColor="#0066CC" />
+
+        <ImageView
+            android:id="@+id/iv_StreamType"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_alignTop="@+id/iv_alarm"
+            android:layout_marginLeft="15dp"
+            android:layout_toRightOf="@+id/iv_alarm" />
+
+        <TextView
+            android:id="@+id/tv_StreamType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/tv_alarm"
+            android:layout_toRightOf="@+id/tv_alarm"
+            android:text="高清"
+            android:textColor="#0066CC" android:layout_below="@id/iv_StreamType" android:layout_alignLeft="@id/iv_StreamType"/>
+
+        <ImageView
+            android:id="@+id/iv_videoplay"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_alignTop="@+id/iv_alarm"
+            android:layout_toRightOf="@+id/iv_StreamType" android:layout_marginLeft="15dp"/>
+
+        <TextView
+            android:id="@+id/tv_videoplay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/tv_alarm"
+            android:layout_toRightOf="@+id/tv_StreamType"
+            android:text="暂停"
+            android:textColor="#0066CC" android:layout_below="@id/iv_videoplay" android:layout_alignLeft="@id/iv_videoplay"/>
+
+        <ImageView
+            android:id="@+id/iv_image"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_alignTop="@+id/iv_alarm"
+            android:layout_marginLeft="15dp"
+            android:layout_toRightOf="@+id/iv_videoplay"
+            android:src="@drawable/pic_selector" />
+
+        <TextView
+            android:id="@+id/tv_image"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/tv_alarm"
+            android:layout_toRightOf="@+id/tv_videoplay"
+            android:text="拍照"
+            android:textColor="#0066CC" android:layout_below="@id/iv_image" android:layout_alignLeft="@id/iv_image"/>
+
+        <ImageView
+            android:id="@+id/iv_rec"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_alignTop="@+id/iv_alarm"
+            android:layout_marginLeft="15dp"
+            android:layout_toRightOf="@+id/iv_image"
+            android:src="@drawable/devrec_selector" />
+
+        <TextView
+            android:id="@+id/tv_rec"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/tv_alarm"
+            android:layout_toRightOf="@+id/tv_image"
+            android:text="录像"
+            android:textColor="#0066CC" android:layout_below="@id/iv_rec" android:layout_alignLeft="@id/iv_rec"/>
+
+        <ImageView
+            android:id="@+id/iv_listenter"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_alignTop="@+id/iv_alarm"
+            android:layout_marginLeft="18dp"
+            android:layout_toRightOf="@+id/iv_rec"
+            android:src="@drawable/listenter_selector" />
+
+        <TextView
+            android:id="@+id/tv_listenter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/tv_alarm"
+            android:layout_toRightOf="@+id/tv_rec"
+            android:text="监听"
+            android:textColor="#0066CC" android:layout_below="@id/iv_listenter" android:layout_alignLeft="@id/iv_listenter"/>
+
+        <ImageView
+            android:id="@+id/iv_sound"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_alignTop="@+id/iv_alarm"
+            android:layout_marginLeft="15dp"
+            android:layout_toRightOf="@+id/iv_listenter"
+            android:src="@drawable/talk_selector" />
+
+        <TextView
+            android:id="@+id/tv_sound"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/tv_alarm"
+            android:layout_toRightOf="@+id/tv_listenter"
+            android:text="对讲"
+            android:textColor="#0066CC" android:layout_below="@id/iv_sound" android:layout_alignLeft="@id/iv_sound"/>
+
+        <ImageView
+            android:id="@+id/iv_bendiRec"
+            android:layout_width="30dip"
+            android:layout_height="30dip"
+            android:layout_alignTop="@+id/iv_alarm"
+            android:layout_marginLeft="15dp"
+            android:layout_toRightOf="@+id/iv_sound"
+            android:src="@drawable/rec_selector"
+            android:visibility="gone" />
+    </RelativeLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar1"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_centerVertical="true" />
+
+    <ImageView
+        android:id="@+id/iv_Left"
+        android:layout_width="62dp"
+        android:layout_height="46dp"
+        android:layout_alignParentLeft="true"
+        android:layout_centerVertical="true"
+        android:src="@drawable/direction_left" />
+
+    <ImageView
+        android:id="@+id/iv_Right"
+        android:layout_width="62dp"
+        android:layout_height="46dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/iv_Left"
+        android:src="@drawable/direction_right" />
+
+    <ImageView
+        android:id="@+id/iv_Down"
+        android:layout_width="46dp"
+        android:layout_height="62dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:src="@drawable/direction_down" />
+
+    <ImageView
+        android:id="@+id/iv_Up"
+        android:layout_width="46dp"
+        android:layout_height="62dp"
+        android:layout_alignLeft="@+id/iv_Down"
+        android:layout_alignParentTop="true"
+        android:src="@drawable/direction_up" />
+
+    <ProgressBar
+        android:id="@+id/progressBar2"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true" />
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@+id/progressBar2"
+        android:text="运行中" />
+
+</RelativeLayout>

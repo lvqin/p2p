@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:background="#FFFFFFFF" >
+<RelativeLayout 
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <RelativeLayout
+        android:id="@+id/top_title"
+        android:layout_width="fill_parent"
+        android:layout_height="60.0dip"
+        android:background="#FF117BB9" >
+
+        <ImageButton
+            android:id="@+id/back_btn"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/back_selector" />
+
+        <TextView
+            android:id="@+id/txtview"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="生成二维码"
+            android:textColor="#FFFFFFFF"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+    
+ <TextView
+        android:id="@+id/txtnetType"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/top_title"
+        android:layout_alignBaseline="@+id/spinnernetType"
+        android:text="网络类型："
+        android:layout_marginTop="25dip"
+        android:layout_marginLeft="10dp"
+        android:textColor="#FF000000" />
+
+    <Spinner
+        android:id="@+id/spinnernetType"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/txtnetType"
+        android:layout_below="@+id/top_title"
+        android:layout_marginTop="10dip" >
+    </Spinner>
+    <TextView
+        android:id="@+id/txtWifiSSID"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/txtnetType"
+        android:layout_alignBaseline="@+id/spinnerSSID"
+        android:text="选择WIFI："
+        android:layout_marginTop="40dip"
+        android:layout_marginLeft="10dp"
+        android:textColor="#FF000000" />
+
+    <Spinner
+        android:id="@+id/spinnerSSID"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/txtWifiSSID"
+        android:layout_below="@+id/spinnernetType"
+        android:layout_marginTop="10dip" >
+    </Spinner>
+    <TextView
+        android:id="@+id/txtWifipwd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/txtWifiSSID"
+        android:text="WIFI密码："
+        android:layout_alignBaseline="@+id/edtWIFIPWD"
+        android:layout_marginTop="40dip"
+        android:layout_marginLeft="10dp"
+        android:textColor="#FF000000" />
+    <EditText
+        android:id="@+id/edtWIFIPWD"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/spinnerSSID"
+        android:layout_toRightOf="@+id/txtWifipwd"
+        android:layout_marginTop="10dip"
+        android:hint="输入WIFI密码" 
+        android:inputType="textPassword"/>
+
+    <Button
+        android:id="@+id/btn_getZxing"
+        android:layout_width="200dip"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/edtWIFIPWD"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="34dp"
+        android:background="@drawable/button_selector"
+        android:text="生成二维码"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20sp" />
+
+</RelativeLayout>
+</ScrollView>

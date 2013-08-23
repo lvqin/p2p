@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:background="#FFFFFFFF">
+<RelativeLayout 
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+     >
+
+    <RelativeLayout
+        android:id="@+id/top_title"
+        android:layout_width="fill_parent"
+        android:layout_height="60.0dip"
+        android:background="#FF117BB9" >
+
+        <ImageButton
+            android:id="@+id/back_btn"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/back_selector" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="服务器设置"
+            android:textColor="#FFFFFFFF"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/user_pass_title"
+        android:layout_width="match_parent"
+        android:layout_height="30.0dip"
+        android:layout_below="@+id/top_title"
+        android:background="#FF898989" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:gravity="center"
+            android:text="服务器设置"
+            android:textSize="13.0sp" >
+        </TextView>
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/tvuser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/edtsvrIP"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/user_pass_title"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="24dp"
+        android:text="服务器地址："
+        android:textColor="#FF000000" />
+
+    <EditText
+        android:id="@+id/edtsvrIP"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/user_pass_title"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_toRightOf="@+id/tvuser"
+        android:hint="输入服务器IP"
+         >
+
+    </EditText>
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/edtprot"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/tvuser"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="40dp"
+        android:text="服务器端口："
+        android:textColor="#FF000000" />
+
+    <EditText
+        android:id="@+id/edtprot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/edtsvrIP"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="10dp"
+        android:layout_toRightOf="@+id/textView1"
+        android:hint="输入服务器端口"
+        android:inputType="phone" >
+    </EditText>   
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="120.0dip"
+        android:layout_height="52.0dip"
+        android:layout_below="@+id/edtprot"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="150dip"
+        android:background="@drawable/button_selector"
+        android:text="修改保存"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20.0sp" >
+    </Button>
+
+</RelativeLayout>
+    </ScrollView>

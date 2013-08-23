@@ -1,0 +1,221 @@
+﻿package com.montnets.android.zmon;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+
+import cn.mw.p2p.adpter.FileExplorerAdapter;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import cn.mw.p2p.unitily.p2punitily;
+
+import android.app.AlertDialog;
+import android.app.ListActivity;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class FileExplorer extends ListActivity implements OnItemLongClickListener {
+
+//	private static final String TAG = "FileExplorer";
+	
+	private String 			mRoot = "/sdcard";
+	private TextView 		mTextViewLocation;
+	private File[]			mFiles;
+	private ImageButton 	imgbtnBack;
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.file_explorer);
+		mTextViewLocation = (TextView) findViewById(R.id.textview_path);
+		imgbtnBack = (ImageButton)findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(new backOnClickListener());
+		if(p2punitily.getSDPath() == null)
+		{
+			Toast.makeText(this, "没有SD卡或SD卡被拔出", 0).show();
+			return;
+		}
+		mRoot = p2punitily.getSDPath() + "/" + P2pBaseUrl.DIR_ROOT;
+		getDirectory(mRoot);
+		getListView().setOnItemLongClickListener(this);
+	}
+	
+	public static boolean checkExtension(File file) {
+		String[] exts = MsgEnum.EXTENSIONS;
+		for(int i=0;i<exts.length;i++) {
+			if(file.getName().indexOf(exts[i]) > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	private void sortFilesByDirectory(File[] files) {
+		Arrays.sort(files, new Comparator<File>() {
+
+			public int compare(File f1, File f2) {
+				long diff = f2.lastModified()-f1.lastModified();  
+		        if(diff>0)  
+		          return 1;  
+		        else if(diff==0)  
+		          return 0;  
+		        else  
+		          return -1;  
+			}
+			
+		});
+	}
+
+	private void getDirectory(String dirPath) {
+		try {
+			mTextViewLocation.setText("Location: " + dirPath);
+	
+			File f = new File(dirPath);
+			File[] temp = f.listFiles();
+			
+			sortFilesByDirectory(temp);
+			
+			File[] files = null;
+			if (!dirPath.equals(mRoot)) {
+				files = new File[temp.length + 1];
+				System.arraycopy(temp, 0, files, 1, temp.length);
+				files[0] = new File(f.getParent());
+			} else {
+				files = temp;
+			}
+			
+			mFiles = files;
+			setListAdapter(new FileExplorerAdapter(this, files, temp.length == files.length));
+		} catch(Exception ex) {
+			Toast.makeText(this, "Error:" + ex.getMessage(), 0).show();
+		}
+	}
+	
+	@Override
+	protected void onListItemClick(ListView l, View v, int position, long id) {
+		
+		File file = mFiles[position];
+
+		if (file.isDirectory()) {
+			if (file.canRead())
+				getDirectory(file.getAbsolutePath());
+			else {
+				Toast.makeText(this, "Error:[" + file.getName() + "] folder can't be read!",0).show();
+			}
+		} else {
+			final String fileAbsolute = file.getAbsolutePath().toString();
+			 Log.i("播放文件路径是----->", file.getAbsolutePath().toString());
+			 if(fileAbsolute.endsWith(".h264")){
+				 Log.i("这个视频可以播放，路径是------->", file.getAbsolutePath().toString());
+				 new Thread (new Runnable() {
+						
+						@Override
+						public void run() {
+							// TODO Auto-generated method stub
+							 openLocalPlayer(fileAbsolute);
+						}
+					}).start();
+				
+			 }else{
+				 Log.i("这个视频不可以播放，路径是------->", file.getAbsolutePath().toString());
+				 if(!checkExtension(file)) {
+						StringBuilder strBuilder = new StringBuilder();
+						for (int i = 0; i < MsgEnum.EXTENSIONS.length; i++)
+							strBuilder.append(MsgEnum.EXTENSIONS[i] + " ");
+						Toast.makeText(this, "Error:File must have this extensions: " + strBuilder.toString(),0).show();
+						return;
+					}
+				 new Thread(new Runnable() {
+					
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+					startPlayer(fileAbsolute);
+					}
+				}).start();
+				 
+			 }
+		}
+	}
+		
+	private void openLocalPlayer(String string) {
+		Intent i = new Intent(FileExplorer.this, LocalPlayer3.class);
+		i.putExtra("URL", string);
+		startActivity(i);
+	}
+
+	/**
+	 * 打开文件
+	 * @param filePath
+	 */
+	private void startPlayer(String filePath) {
+		Intent intent = new Intent(); 
+		File file = new File(filePath);
+	    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK); 
+	     //设置intent的Action属性 
+	    intent.setAction(Intent.ACTION_VIEW); 
+	    //获取文件file的MIME类型 
+	    String type = p2punitily.getMimeType(file); 
+	    //设置intent的data和Type属性。 
+	    intent.setDataAndType(Uri.fromFile(file), type); 
+	    //跳转 
+	    startActivity(intent);
+    }
+	
+	private final class backOnClickListener implements View.OnClickListener
+	{
+
+		@Override
+		public void onClick(View v) {
+			FileExplorer.this.finish();
+		}
+	}
+	
+	private boolean blFlag = false;
+	@SuppressWarnings("rawtypes")
+	public boolean onItemLongClick(AdapterView parent, View view, int position, long id) {
+		
+		final File file = mFiles[position];
+		if(file.isDirectory())
+		{
+			return false;
+		}
+		new AlertDialog.Builder(this)
+		.setTitle("提示")
+		.setMessage("您确定要删除该文件吗?")
+		.setPositiveButton("确定",new DialogInterface.OnClickListener() {
+
+					public void onClick(
+						DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+						File delFile = new File(file.getAbsolutePath());
+						if(delFile.exists())
+						{
+							blFlag = delFile.delete();
+							if (blFlag) {
+								Toast.makeText(FileExplorer.this, "删除成功", 0).show();
+								//刷新列表
+								getDirectory(file.getParent());
+							} else {
+								Toast.makeText(FileExplorer.this, "删除失败", 0).show();
+							}
+						}
+					}
+				})
+		.setNegativeButton("取消",new DialogInterface.OnClickListener() {
+					public void onClick(
+						DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+					}
+				}).setCancelable(false).show();
+		return true;
+	}
+}

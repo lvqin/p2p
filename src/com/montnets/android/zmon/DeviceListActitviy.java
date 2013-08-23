@@ -1,0 +1,320 @@
+﻿package com.montnets.android.zmon;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+
+import com.montnets.android.zmon.GroupDeviceListActitviy.MyDeviceManageAdapter.viewHoder;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.BaseAdapter;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+import cn.mw.p2p.Request.MonAddDevRequest;
+import cn.mw.p2p.Request.PlayURLRequest;
+import cn.mw.p2p.adpter.DeviceAdapter;
+import cn.mw.p2p.bean.VedioPointBean;
+import cn.mw.p2p.handler.MethodListCount;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+
+public class DeviceListActitviy extends Activity {
+	
+	private ProgressDialog dialog;
+	private MyDeviceManageAdapter mydeviceAdapter;
+	private DeviceAdapter deviceAdapter;
+	private Cursor cursor;
+	private ImageButton imgbtnBack, imgbtnRef;
+	private ListView lvMyDevList;
+	private ArrayList<VedioPointBean> vedioPointsList;
+	private VedioPointBean points = null;
+	private String userIDString;// 用户名
+	private Threadhandler thd;
+	private String baseurlString;//基本URL
+	private String loginSession;
+	private SharedPreferences sp;//配置
+	private String JumpType;//跳转类型
+	private TextView myDeviceTitle;
+	private DeviceAdapter devDao;
+	
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(1);
+        setContentView(R.layout.mydevlist_layout); 
+        ExitApplication.getInstance().addActivity(this);
+        sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+        baseurlString = P2pBaseUrl.BaseUrl(sp);
+		String[] strUserList = sp.getString("userInfo", "").split(",");
+		userIDString = strUserList[0];
+		loginSession = strUserList[2];
+		JumpType = getIntent().getStringExtra("JumpType");//获取跳转类型
+		devDao = new DeviceAdapter(DeviceListActitviy.this);
+        initUI();
+    }
+	
+	/**
+	 * 初始化UI
+	 */
+	private void initUI() {
+		myDeviceTitle = (TextView)findViewById(R.id.txtmyDeviceTitle);
+		if(JumpType.equals("DEVRECORD"))//设备录像
+		{
+			myDeviceTitle.setText("设备录像查询");
+		}else {
+			myDeviceTitle.setText("视频播放");
+		}
+		imgbtnBack = (ImageButton) findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(new backOnClickListener());
+		// TODO 刷新设备列表
+		imgbtnRef = (ImageButton) findViewById(R.id.btnRef);
+		imgbtnRef.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				dialog = ProgressDialog.show(DeviceListActitviy.this, "", "正在刷新设备列表，请等待...", true);
+				dialog.setCancelable(true);
+				MonAddDevRequest adr = new MonAddDevRequest();
+				adr.setAccount(userIDString);
+				adr.setLoginSession(loginSession);
+				thd = new Threadhandler(handler, adr, baseurlString, devDao);
+				thd.start();
+			}
+		});
+		
+		lvMyDevList = (ListView)findViewById(R.id.lvmyDevList);
+		vedioPointsList = getDataForSqlite();
+		mydeviceAdapter = new MyDeviceManageAdapter();
+		this.lvMyDevList.setAdapter(mydeviceAdapter);
+		lvMyDevList.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
+					long arg3) {
+				
+				points = (VedioPointBean) vedioPointsList.get(arg2);
+
+				if(!points.isOnline())
+				{
+					Toast.makeText(DeviceListActitviy.this, "设备不在线，无法执行此操作！", 0).show();
+					return;
+				}
+				if(JumpType.equals("DEVRECORD"))//设备录像
+				{
+					Intent intent = new Intent(DeviceListActitviy.this,DeviceRecordSearch.class);
+					intent.putExtra("DevID", points.getDevID());
+					intent.putExtra("ChannelNo", points.getChannelNo());
+					startActivity(intent);
+					return;
+				}
+				dialog = ProgressDialog.show(DeviceListActitviy.this, "", "正在打开视频，请等待...", true);
+				dialog.setCancelable(true);
+				//开启线程
+				PlayURLRequest prt = new PlayURLRequest();
+				prt.setAccount(userIDString);
+				prt.setLoginSession(loginSession);
+				prt.setDevID(points.getDevID());
+				prt.setChannelNo(Integer.parseInt(points.getChannelNo()));
+				prt.setStreamType(2);
+				thd = new Threadhandler(handler, prt, baseurlString, "GetPlayUrl");
+				thd.start();
+			}
+		});
+		deviceAdapter.closeDB(cursor);
+		deviceAdapter.closeDB();
+	}
+	
+	
+	/**
+	 * 返回操作
+	 * 
+	 * @author Administrator
+	 * 
+	 */
+	private final class backOnClickListener implements View.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			DeviceListActitviy.this.finish();
+		}
+	}
+	
+	/**
+	 * 获取设备列表
+	 * @return
+	 */
+	private ArrayList<VedioPointBean> getDataForSqlite()
+	{
+		deviceAdapter = new DeviceAdapter(DeviceListActitviy.this);
+		dialog = ProgressDialog.show(DeviceListActitviy.this, "", "获取数据中，请等待...", true);
+		dialog.setCancelable(true);
+		vedioPointsList = MethodListCount.getDataArrayListForSqlite2(cursor, deviceAdapter, DeviceListActitviy.this);
+		dialog.dismiss();
+		if(vedioPointsList != null){
+		Collections.sort(vedioPointsList,  new Comparator<VedioPointBean>() {
+            
+			private int compare(Boolean lhs, Boolean rhs) {
+				// TODO Auto-generated method stub
+				return (lhs.equals(rhs)? 0 : (lhs.booleanValue()==true?1:-1));   
+			}
+			
+			@Override
+			public int compare(VedioPointBean lhs, VedioPointBean rhs) {
+				// TODO Auto-generated method stub
+				Boolean e1 = lhs.isOnline();
+				Boolean e2 = rhs.isOnline();
+				
+				return ( (compare(e2, e1) == 0 ?  0 : compare(e2, e1)) );   
+			}
+		});
+		}
+		return vedioPointsList;
+	}
+	
+	//TODO 线程操作 ===================================================
+	private final Handler handler = new Handler() {
+		public void handleMessage(Message msg) {
+			dialog.dismiss();
+    		int msgID = msg.what;
+    		switch(msgID)
+    		{
+				case MsgEnum.PLAYURL_SUCCESS:	//获取播放地址成功	
+					String playURL = msg.getData().getString("PLAYURL");
+					System.out.println("视频播放地址：" + playURL);
+					if (playURL != null && points != null) {
+						Intent intent = new Intent(DeviceListActitviy.this,/*FFmpeg_Player.class*/FullScreenPlayer.class);
+						intent.putExtra("PlayURL", playURL);
+						intent.putExtra("DevID", points.getDevID());
+						intent.putExtra("ChannelNo", points.getChannelNo());
+						intent.putExtra("PtzFlag", String.valueOf(points.getPtzFlag()));
+						startActivity(intent);
+					}
+					else {
+						Toast.makeText(DeviceListActitviy.this, "数据响应异常！", 1).show();
+					}
+					break;
+				case MsgEnum.USERNAME_NULL:
+					Toast.makeText(DeviceListActitviy.this, "用户不存在！", 1).show();
+					break;
+				case MsgEnum.SESSION_TIMEOUT:
+					Toast.makeText(DeviceListActitviy.this, "SESSION超时！", 1).show();
+					break;
+				case MsgEnum.DEVICE_EXISTS_NULL:
+					Toast.makeText(DeviceListActitviy.this, "设备不存在！", 1).show();
+					break;
+				case MsgEnum.PLAYURL_FAILE:		//获取播放地址失败
+					Toast.makeText(DeviceListActitviy.this, "获取播放地址失败,请重试！", 0).show();
+					break;
+				case MsgEnum.SERVER_ERROR:
+					Toast.makeText(DeviceListActitviy.this, "操作失败,请重试！", 0).show();
+					break;
+				case MsgEnum.SUCCESS://刷新设备列表成功
+					vedioPointsList = getDataForSqlite();
+					mydeviceAdapter = new MyDeviceManageAdapter();
+					lvMyDevList.setAdapter(mydeviceAdapter);
+					Toast.makeText(DeviceListActitviy.this, "设备列表刷新成功！", 1).show();
+					break;
+				default:
+					break;
+    		}
+		}
+	};
+	
+	public class MyDeviceManageAdapter extends BaseAdapter {
+
+
+		public MyDeviceManageAdapter() {
+			
+		}
+
+		public int getCount() {
+			return vedioPointsList.size();
+		}
+
+		public Object getItem(int paramInt) {
+			return vedioPointsList.get(paramInt);
+		}
+
+		public long getItemId(int paramInt) {
+			return 0L;
+		}
+
+		public View getView(int paramInt, View paramView, ViewGroup paramViewGroup) {
+			viewHoder localviewHoder;
+			if (paramView != null) {
+				localviewHoder = (viewHoder) paramView.getTag();
+			}else{
+				localviewHoder = new viewHoder();
+			}
+				paramView = LayoutInflater.from(DeviceListActitviy.this).inflate(R.layout.recorditem, null, false);
+				localviewHoder = new viewHoder();
+				localviewHoder.ivonlie = (ImageView) paramView.findViewById(R.id.ivOnline);
+				localviewHoder.textview = ((TextView) paramView.findViewById(R.id.txtName));
+				paramView.setTag(localviewHoder);
+				points = (VedioPointBean) getItem(paramInt);
+				
+				// Group id: 0-my device; 1-shared device
+				// Share Flag: 0-unshared; 1-shared
+				if (points.getGroupid() == 0) {
+					if(points.isOnline())
+					{
+						localviewHoder.ivonlie.setBackgroundResource(R.drawable.sp);
+					}
+					else {
+						localviewHoder.ivonlie.setBackgroundResource(R.drawable.sp2);
+					}
+				}else{
+					if (points.isOnline()) {
+						localviewHoder.ivonlie.setBackgroundResource(R.drawable.share01);
+					}else{
+						localviewHoder.ivonlie.setBackgroundResource(R.drawable.share02);
+					}
+				}
+				
+				localviewHoder.textview.setText(points.getName());
+				//点击事件
+//				localviewHoder.textview.setOnClickListener(new View.OnClickListener() {
+//					
+//					@Override
+//					public void onClick(View v) {
+//						if(!points.isOnline())
+//						{
+//							Toast.makeText(DeviceListActitviy.this, "设备不在线，无法打开视频！", 0).show();
+//							return;
+//						}
+//						dialog = ProgressDialog.show(DeviceListActitviy.this, "", "正在打开视频，请等待...", true);
+//						//开启线程
+//						thd = new Threadhandler(handler,points, baseurlString,userIDString,loginSession);
+//						thd.start();
+//					}
+//				});
+
+			
+			return paramView;
+		}
+
+		public final class viewHoder {
+			ImageView ivonlie;
+			TextView textview;
+		}
+	}
+}

@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFFFF" >
+
+    <RelativeLayout
+        android:id="@+id/top_title"
+        android:layout_width="fill_parent"
+        android:layout_height="60.0dip"
+        android:background="#FF117BB9" >
+
+        <ImageButton
+            android:id="@+id/back_btn"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/back_selector" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="参数配置"
+            android:textColor="#FFFFFFFF"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_name"
+        android:layout_width="match_parent"
+        android:layout_height="30.0dip"
+        android:layout_below="@+id/top_title"
+        android:background="#FF898989" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:gravity="center"
+            android:text="修改设备名称"
+            android:textSize="13.0sp" >
+        </TextView>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_namecontent"
+        android:layout_width="match_parent"
+        android:layout_height="60.0dip"
+        android:layout_below="@+id/notify_name" >
+
+        <EditText
+            android:id="@+id/deviceName"
+            android:layout_width="200dp"
+            android:layout_height="50.0dip"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:layout_marginRight="40.0dip"
+            android:background="@drawable/shurubg"
+            android:gravity="center"
+            android:hint="请输入新设备名称" >
+        </EditText>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_video_pass_title"
+        android:layout_width="match_parent"
+        android:layout_height="30.0dip"
+        android:layout_below="@+id/notify_namecontent"
+        android:background="#FF898989" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:gravity="center"
+            android:text="修改设备密码"
+            android:textSize="13.0sp" >
+        </TextView>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_video_pass_edit"
+        android:layout_width="match_parent"
+        android:layout_height="60.0dip"
+        android:layout_below="@+id/notify_video_pass_title" >
+
+        <EditText
+            android:id="@+id/hostpwd"
+            android:layout_width="130dp"
+            android:layout_height="40.0dip"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:background="@drawable/shurubg"
+            android:gravity="center"
+            android:hint="原始密码" >
+        </EditText>
+
+        <EditText
+            android:id="@+id/hostnewpwd"
+            android:layout_width="130dp"
+            android:layout_height="40.0dip"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:layout_toRightOf="@+id/hostpwd"
+            android:background="@drawable/shurubg"
+            android:gravity="center"
+            android:hint="新密码" >
+        </EditText>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_video_code_stream_layout"
+        android:layout_width="match_parent"
+        android:layout_height="30.0dip"
+        android:layout_below="@+id/notify_video_pass_edit"
+        android:background="#FF898989" >
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:text="其他设置"
+            android:textSize="13.0sp" >
+        </TextView>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/set_upload_way2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/notify_video_code_stream_layout" >
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/screen_size"
+        android:layout_width="match_parent"
+        android:layout_height="40.0dip"
+        android:layout_below="@+id/set_upload_way2"
+        android:layout_marginTop="10dp"
+        android:visibility="gone" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:text="摄像头休眠/唤醒"
+            android:textSize="18.0sp" >
+        </TextView>
+
+        <Spinner
+            android:id="@+id/spinnerSleep"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="20.0dip"
+            android:minWidth="150dp" >
+        </Spinner>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/huazhi"
+        android:layout_width="match_parent"
+        android:layout_height="40.0dip"
+        android:layout_below="@+id/screen_size"
+        android:layout_marginTop="10dip" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:text="同时观看人数"
+            android:textSize="18.0sp" >
+        </TextView>
+
+        <Spinner
+            android:id="@+id/spinnerPerson"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="20.0dip"
+            android:minWidth="150dp" >
+        </Spinner>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/devRec"
+        android:layout_width="match_parent"
+        android:layout_height="40.0dip"
+        android:layout_below="@+id/huazhi" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:text="设置录像时长"
+            android:textSize="18.0sp" >
+        </TextView>
+
+        <EditText
+            android:id="@+id/TimeLen"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="20.0dip"
+            android:background="@drawable/shurubg"
+            android:text="5"
+            android:gravity="center"
+            android:inputType="number" />
+
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/audioInput"
+        android:layout_width="match_parent"
+        android:layout_height="40.0dip"
+        android:layout_below="@+id/devRec" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:text="重启摄像头"
+            android:textSize="18.0sp" >
+        </TextView>
+
+        <CheckBox
+            android:id="@+id/chkrestart"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginRight="20.0dip" />
+    </RelativeLayout>
+
+    <Button
+        android:id="@+id/btnSave"
+        android:layout_width="120.0dip"
+        android:layout_height="52.0dip"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="20dip"
+        android:background="@drawable/button_selector"
+        android:text="修改保存"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20.0sp" >
+    </Button>
+
+</RelativeLayout>

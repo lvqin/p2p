@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFFFF" >
+
+    <RelativeLayout
+        android:id="@+id/top_title"
+        android:layout_width="fill_parent"
+        android:layout_height="60.0dip"
+        android:background="#FF117BB9" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="E云帐户管理"
+            android:textColor="#FFFFFFFF"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_video_pass_title"
+        android:layout_width="match_parent"
+        android:layout_height="30.0dip"
+        android:layout_below="@+id/top_title"
+        android:background="#FF898989" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:gravity="center"
+            android:text="修改E云帐户密码"
+            android:textSize="13.0sp" >
+        </TextView>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_video_pass_edit"
+        android:layout_width="match_parent"
+        android:layout_height="60.0dip"
+        android:gravity="center"
+        android:layout_below="@+id/notify_video_pass_title" >
+
+        <EditText
+            android:id="@+id/ecloubAccount"
+            android:layout_width="250dp"
+            android:layout_height="40.0dip"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:background="@drawable/shurubg"
+            android:gravity="center"
+            android:hint="输入E云帐户" >
+        </EditText>
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/notify_video_pass"
+        android:layout_width="match_parent"
+        android:layout_height="60.0dip"
+        android:gravity="center"
+        android:layout_below="@+id/notify_video_pass_title"
+        android:layout_marginTop="50dip" >
+
+        <EditText
+            android:id="@+id/ecloubpwd"
+            android:layout_width="250dp"
+            android:layout_height="40.0dip"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:background="@drawable/shurubg"
+            android:gravity="center"
+            android:hint="输入E云帐户密码"
+            android:inputType="textPassword" >
+        </EditText>
+    </RelativeLayout>
+
+    <Button
+        android:id="@+id/btnEcloubSave"
+        android:layout_width="120.0dip"
+        android:layout_height="52.0dip"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="150dip"
+        android:background="@drawable/xiugaibaocun"
+        android:text="修改保存"
+        android:textColor="#FFFFFFFF"
+        android:textSize="20.0sp" >
+    </Button>
+
+</RelativeLayout>

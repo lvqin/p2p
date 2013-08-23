@@ -1,0 +1,265 @@
+﻿package com.montnets.android.zmon;
+
+import java.util.ArrayList;
+
+import cn.mw.p2p.Request.DevRecordFileSelectRequest;
+import cn.mw.p2p.Request.PlayURLRequest;
+import cn.mw.p2p.bean.DevRecordFileBean;
+import cn.mw.p2p.handler.MethodListCount;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.BaseAdapter;
+import android.widget.ImageButton;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+public class DeviceRecordSearchResultList extends Activity {
+
+	private static String userIDString;//用户名
+	private String loginSession;
+	private ImageButton imgbtnBack;
+	private String beginTime;
+	private String endTime;
+	private String DevID;
+	private String ChannelNo;
+	private int RecordType;
+	private int BeginInex = 1;	//文件起始索引号
+	private int RecordNum = 50;	//本次查询文件数
+	private ListView lvRec;
+	private ProgressDialog dialog;
+	private Threadhandler thd;
+	private ArrayList<DevRecordFileBean> arrayDevRecList;
+	private DevRecordFileBean drfbBean;
+	private MyAdapter adapter;
+	private String baseurlString;
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState)
+	{
+		super.onCreate(savedInstanceState);
+        requestWindowFeature(1);
+        setContentView(R.layout.devrecordfile_list_layout);
+        ExitApplication.getInstance().addActivity(this);
+		SharedPreferences sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+		userIDString = sp.getString("userInfo", "").split(",")[0];
+		loginSession = sp.getString("userInfo", "").split(",")[2];
+		baseurlString = P2pBaseUrl.BaseUrl(sp);
+		initData();
+		initUI();
+		getRecordFileList();
+	}
+
+	/**
+	 * 初始化数据
+	 */
+	private void initData()
+	{
+		String[] SearchCondtion = getIntent().getStringExtra("SearchCondtion").split(",");
+		DevID = SearchCondtion[0];
+		ChannelNo = SearchCondtion[1];
+		RecordType = Integer.parseInt(SearchCondtion[2]);
+		beginTime = SearchCondtion[3];
+		endTime = SearchCondtion[4];
+	}
+	
+	/**
+	 * 初始化UI
+	 */
+	private void initUI() {
+		imgbtnBack = (ImageButton) findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(new backOnClickListener());
+	}
+	
+	/**
+	 * 数据列表绑定
+	 */
+	private void BindDataListView()
+	{
+		arrayDevRecList = MethodListCount.arrayDevRecList;
+		lvRec = (ListView)findViewById(R.id.lvDevRecordList);
+		adapter = new MyAdapter();
+		lvRec.setAdapter(adapter);
+		lvRec.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
+					long arg3) {
+				drfbBean = (DevRecordFileBean) arrayDevRecList.get(arg2);
+				if (drfbBean != null) {
+					PlayURLRequest prt = new PlayURLRequest();
+					prt.setAccount(userIDString);
+					prt.setLoginSession(loginSession);
+					prt.setDevID(DevID);
+					prt.setChannelNo(Integer.parseInt(ChannelNo));
+					prt.setStreamType(1);
+					prt.setFileName(drfbBean.getName());
+					dialog = ProgressDialog.show(DeviceRecordSearchResultList.this, "", "正在打开视频", true);
+					dialog.setCancelable(true);
+					thd = new Threadhandler(mHandler, prt, baseurlString, "MonGetRecordPlayUrl");
+					thd.start();
+				}
+				
+			}
+		});
+	}
+	
+	private final class backOnClickListener implements View.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			DeviceRecordSearchResultList.this.finish();
+		}
+	}
+	
+	/**
+	 * 获取设备录像文件列表
+	 */
+	private void getRecordFileList()
+	{
+		DevRecordFileSelectRequest dsr = new DevRecordFileSelectRequest();
+		dsr.setAccount(userIDString);
+		dsr.setLoginSession(loginSession);
+		dsr.setDevID(DevID);
+		dsr.setChannelNo(Integer.parseInt(ChannelNo));
+		dsr.setRecordType(RecordType);
+		dsr.setBeginTime(beginTime);
+		dsr.setEndTime(endTime);
+		dsr.setBeginInex(BeginInex);
+		dsr.setRecordNum(RecordNum);
+		dialog = ProgressDialog.show(DeviceRecordSearchResultList.this, "", "正在获取设备录像", true);
+		dialog.setCancelable(true);
+		thd = new Threadhandler(mHandler, dsr, baseurlString);
+		thd.start();
+	}
+	
+	/**
+	 * 消息处理
+	 */
+	private final Handler mHandler = new Handler()
+	{
+		public void handleMessage(Message msg)
+		{
+			dialog.dismiss();
+			int msgID = msg.what;
+			switch (msgID) {
+			case MsgEnum.SUCCESS:
+				BindDataListView();
+				Toast.makeText(DeviceRecordSearchResultList.this, "查询成功！", 0).show();
+				break;
+			case MsgEnum.USERNAME_NULL:
+				Toast.makeText(DeviceRecordSearchResultList.this, "用户不存在！", 0).show();
+				break;
+			case MsgEnum.SESSION_TIMEOUT:
+				Toast.makeText(DeviceRecordSearchResultList.this, "SESSION超时！", 0).show();
+				break;
+			case MsgEnum.DEVICE_EXISTS_NULL:
+				Toast.makeText(DeviceRecordSearchResultList.this, "设备不存在！", 0).show();
+				break;
+			case MsgEnum.DEV_IS_OTHERUSER:
+				Toast.makeText(DeviceRecordSearchResultList.this, "设备属于其他账户！", 0).show();
+				break;
+			case MsgEnum.DEV_NOTONLINE:
+				Toast.makeText(DeviceRecordSearchResultList.this, "设备不在线！", 0).show();
+				break;
+			case MsgEnum.REQUEST_FAINLD:
+				Toast.makeText(DeviceRecordSearchResultList.this, "请求发送失败！", 0).show();
+				break;
+			case MsgEnum.OPERRATE_TIMEOUT:
+				Toast.makeText(DeviceRecordSearchResultList.this, "操作超时！", 0).show();
+				break;
+			case MsgEnum.PARAMETER_INVALID:
+				Toast.makeText(DeviceRecordSearchResultList.this, "参数无效！", 0).show();
+				break;
+			case MsgEnum.OPERRATE_FAINLD:
+				Toast.makeText(DeviceRecordSearchResultList.this, "操作失败！", 0).show();
+				break;
+			case MsgEnum.ACCOUNT_UNUSABLE:
+				Toast.makeText(DeviceRecordSearchResultList.this, "用户不可用！", 0).show();
+				break;
+			case MsgEnum.SERVER_ERROR:
+				Toast.makeText(DeviceRecordSearchResultList.this, "服务器异常！", 0).show();
+				break;
+			case MsgEnum.PLAYURL_SUCCESS:
+				try {
+					String PlayURL = msg.getData().getString("PLAYURL");
+					System.out.println("获取播放设备录像文件地址：" + PlayURL);
+					Intent it = new Intent();
+					it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+					it.setAction(Intent.ACTION_VIEW);
+					it.setDataAndType(Uri.parse(PlayURL), "video/*");
+					startActivity(it);
+				} catch (Exception e) {
+					Toast.makeText(DeviceRecordSearchResultList.this, "设备录像打开失败；", 0).show();
+				}
+				break;
+			case MsgEnum.PLAYURL_FAILE:
+				Toast.makeText(DeviceRecordSearchResultList.this, "获取播放地址失败！", 0).show();
+				break;
+			default:
+				break;
+			}
+		}
+	};
+	
+	public final class ViewHolder {
+		public TextView text;
+	}
+
+	public class MyAdapter extends BaseAdapter {
+		private LayoutInflater mInflater;
+
+		public MyAdapter() {
+			this.mInflater = LayoutInflater.from(DeviceRecordSearchResultList.this);
+		}
+		
+		@Override
+		public int getCount() {
+			return arrayDevRecList.size();
+		}
+
+		@Override
+		public Object getItem(int position) {
+			return arrayDevRecList.get(position);
+		}
+
+		@Override
+		public long getItemId(int position) {
+			return 0L;
+		}
+
+		@Override
+		public View getView(int paramInt, View paramView, ViewGroup paramViewGroup) {
+			ViewHolder localviewHoder = null;
+			if (paramView == null) {
+				paramView = mInflater.inflate(R.layout.listrecordsmview, null, false);
+				localviewHoder = new ViewHolder();
+				localviewHoder.text = ((TextView) paramView.findViewById(R.id.txtFileName));
+				paramView.setTag(localviewHoder);
+				final DevRecordFileBean localDevRecBean = (DevRecordFileBean) getItem(paramInt);
+				localviewHoder.text.setText(localDevRecBean.getName()
+						+ "\n开始时间：" + localDevRecBean.getBeginTime()
+						+ "\n结束时间：" + localDevRecBean.getEndTime());
+			} else {
+				localviewHoder = (ViewHolder) paramView.getTag();
+			}
+			return paramView;
+		}
+		
+	}
+}

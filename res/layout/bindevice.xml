@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#FFFFFFFF"
+    android:orientation="vertical">
+
+            
+    <EditText
+        android:id="@+id/edtHostID"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:maxLength="20"
+        android:hint="输入设备ID"
+        android:gravity="fill_horizontal"
+         />
+    
+    <EditText
+        android:id="@+id/edtHostPwd"
+        android:layout_height="wrap_content"
+        android:layout_width="match_parent"
+        android:maxLength="20"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:hint="输入设备验证码"
+        android:gravity="fill_horizontal"
+         />
+        
+</LinearLayout>

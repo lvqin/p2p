@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent">
+<RelativeLayout
+	android:orientation="vertical"
+	android:background="@drawable/bg"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent" >
+	<RelativeLayout
+		android:background="@drawable/login_bg"
+		android:paddingTop="20.0dip"
+		android:layout_width="match_parent"
+		android:layout_height="250.0dip"
+		android:layout_marginLeft="10.0dip"
+		android:layout_marginTop="190.0dip"
+		android:layout_marginRight="10.0dip"
+		android:gravity="center"
+		>
+		<EditText
+			android:id="@+id/userName"
+			android:layout_width="250dp"
+			android:layout_height="50.0dip"
+			android:layout_marginLeft="8dp"
+			android:layout_marginRight="5.0dip"
+			android:hint="输入用户账号/设备编码"
+			>
+		</EditText>
+
+		<EditText
+		    android:id="@+id/userPwd"
+		    android:layout_width="250dp"
+		    android:layout_height="50.0dip"
+		    android:layout_below="@+id/userName"
+		    android:layout_marginLeft="8dip"
+		    android:layout_marginRight="5.0dip"
+		    android:layout_marginTop="10.0dip"
+		    android:hint="输入密码"
+		     style="@android:style/Widget.EditText"
+		    android:inputType="textPassword" >
+
+		</EditText>
+		<Button
+			android:id="@+id/forgetbtn"
+			android:layout_width="80.0dip"
+			android:layout_height="40.0dip"
+			android:layout_marginRight="30.0dip"
+			android:layout_marginBottom="5.0dip"
+			android:layout_alignRight="@+id/userPwd"
+			android:layout_alignBottom="@+id/userPwd"
+			android:text="忘记密码"
+			android:singleLine="true"
+			android:textColor="#0000FF"
+			>
+		</Button>
+
+		<CheckBox
+		    android:id="@+id/login_checkbox"
+		    android:layout_width="140dip"
+		    android:layout_height="40.0dip"
+		    android:layout_alignLeft="@+id/userPwd"
+		    android:layout_below="@+id/userPwd"
+		    android:layout_marginBottom="8.0dip"
+		    android:layout_marginTop="4.0dip"
+		    android:button="@drawable/check_selector"
+		    android:text="记住帐号"
+		    android:textColor="#FF000000"
+		    android:textSize="14sp" >
+
+		</CheckBox>
+
+		<CheckBox
+		    android:id="@+id/login_checkpwd"
+		    android:layout_width="100dip"
+		    android:layout_height="40.0dip"
+		    android:layout_alignRight="@+id/userPwd"
+		    android:layout_below="@+id/userPwd"
+		    android:layout_marginBottom="8.0dip"
+		    android:layout_marginTop="4.0dip"
+		    android:layout_toRightOf="@+id/login_checkbox"
+		    android:button="@drawable/check_selector"
+		    android:text="记住密码"
+		    android:textColor="#FF000000"
+		    android:textSize="14sp" >
+
+		</CheckBox>
+		<TextView
+			android:textSize="20.0sp"
+			android:id="@+id/loginbtn"
+			android:background="@drawable/login_selector"
+			android:focusable="true"
+			android:clickable="true"
+			android:gravity="center"
+			android:layout_width="90.0dip"
+			android:layout_height="50.0dip"
+			android:text="登录"
+			android:textColor="#FFFFFFFF"
+			android:layout_below="@+id/login_checkbox"
+			android:layout_alignLeft="@+id/login_checkbox"
+			style="text-align:center"
+			>
+		</TextView>
+		<TextView
+			android:textSize="20.0sp"
+			android:id="@+id/firstLogin"
+			android:background="@drawable/frist_login_selector"
+			android:focusable="true"
+			android:clickable="true"
+			android:gravity="center"
+			android:layout_width="90.0dip"
+			android:layout_height="50.0dip"
+			android:layout_marginLeft="8.0dip"
+			android:textColor="#FFFFFFFF"
+			android:text="注   册"
+			android:layout_toRightOf="@+id/loginbtn"
+			android:layout_below="@+id/login_checkbox"
+			style="text-align:center"
+			>
+		</TextView>
+		<TextView
+			android:textSize="25.0sp"
+			android:id="@+id/setbtn"
+			android:background="@drawable/set_selector"
+			android:layout_width="60.0dip"
+			android:layout_height="50.0dip"
+			android:layout_marginLeft="8.0dip"
+			android:gravity="center"
+			android:layout_toRightOf="@+id/firstLogin"
+			android:layout_below="@+id/login_checkbox"
+			style="text-align:center"
+			>
+		</TextView>
+	</RelativeLayout>
+</RelativeLayout>
+       </ScrollView>

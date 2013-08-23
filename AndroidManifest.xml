@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.montnets.android.zmon"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk android:minSdkVersion="8" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/> 
+    
+   
+
+    <application
+        android:icon="@drawable/icon"
+        android:label="@string/app_name" >
+        <activity
+            android:label="@string/app_name"
+            android:name="com.montnets.android.zmon.LoginActivity" >
+            <intent-filter >
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.MainActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.VideoPlayer"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.FileListActivity2"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.Setting"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.EcloubRecords"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.DevListActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.DeviceSetting"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.FullScreenPlayer"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.FullScreenPlayer2"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.FullScreenPlayer3"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+		        <action android:name="android.intent.action.VIEW" />
+		        <category android:name="android.intent.category.BROWSABLE" />
+		        <data android:mimeType="video/*"  />
+		        <data android:mimeType="application/x-quicktimeplayer*" />
+		        <data android:mimeType="application/x-mpeg" />
+		        <data android:mimeType="application/vnd.dvd*" />
+		        <data android:mimeType="application/vnd.3gp*" />
+		        <data android:mimeType="application/3gpp*" />
+		        <data android:mimeType="application/vnd.rn-realmedia*" />
+		        <data android:mimeType="application/mp4*" />
+		        <data android:mimeType="application/mpeg*" />
+		        <data android:mimeType="application/sdp" />
+		        <data android:mimeType="application/vnd.wap.mms-message" />
+		
+		        <data android:pathPattern=".*mkv" />
+		        <data android:pathPattern=".*MKV" />
+		        
+		        <data android:pathPattern=".*flv" />
+		        <data android:pathPattern=".*FLV" />
+		        
+		        <data android:pathPattern=".*wmv" />
+		        <data android:pathPattern=".*WMV" />
+		    	
+		        <data android:pathPattern=".*ts" />
+		        <data android:pathPattern=".*TS" />
+		        
+		        <data android:pathPattern=".*rm" />
+		        <data android:pathPattern=".*RM" />
+		        
+		        <data android:pathPattern=".*rmvb" />
+		        <data android:pathPattern=".*RMVB" />
+		        
+		        <data android:pathPattern=".*webm" />
+		        <data android:pathPattern=".*WEBM" />
+		        
+		        <data android:pathPattern=".*mov" />
+		        <data android:pathPattern=".*MOV" />
+		        
+		        <data android:pathPattern=".*mpg" />
+		        <data android:pathPattern=".*MPG" />
+		        
+		        <data android:pathPattern=".*dat" />
+		        <data android:pathPattern=".*DAT" />
+		        
+		        <data android:pathPattern=".*vstream" />
+		        <data android:pathPattern=".*VSTREAM" />
+		        
+		        <data android:pathPattern=".*mpeg" />
+		        <data android:pathPattern=".*MPEG" />
+		        
+		        <data android:pathPattern=".*f4v" />
+		        <data android:pathPattern=".*F4V" />
+		        
+		        <data android:pathPattern=".*avi" />
+		        <data android:pathPattern=".*AVI" />
+		        
+		        <data android:pathPattern=".*ogv" />
+		        <data android:pathPattern=".*OGV" />
+		        
+		        <data android:pathPattern=".*dv" />
+		        <data android:pathPattern=".*DV" />
+		        
+		        <data android:pathPattern=".*divx" />
+		        <data android:pathPattern=".*DIVX" />
+		        
+		        <data android:pathPattern=".*vob" />
+		        <data android:pathPattern=".*VOB" />
+		        
+		        <data android:pathPattern=".*asf" />
+		        <data android:pathPattern=".*ASF" />
+		        
+		        <data android:pathPattern=".*3gp" />
+		        <data android:pathPattern=".*3GP" />
+		        
+		        <data android:pathPattern=".*3gpp" />
+		        <data android:pathPattern=".*3GPP" />      
+		        
+		        <data android:pathPattern=".*h264" />
+		        <data android:pathPattern=".*H264" />
+		        
+		        <data android:pathPattern=".*h261" />
+		        <data android:pathPattern=".*H261" />
+		        
+		        <data android:pathPattern=".*h263" />
+		        <data android:pathPattern=".*H263" />
+	        </intent-filter>
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.LocalPlayer3"
+            android:screenOrientation="landscape" >
+            <intent-filter>
+		        <action android:name="android.intent.action.VIEW" />
+		        <category android:name="android.intent.category.DEFAULT" />
+		        <category android:name="android.intent.category.BROWSABLE" />
+		        <data android:pathPattern=".*h264" />
+		        <data android:pathPattern=".*H264" />
+	        </intent-filter>
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.LocalPlayer"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.RecordActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.RecpolicySetActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.RecpolicyList"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.SafepolicyList"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.SafepolicyListSet"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.RegActitivty1"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.RegActitivty"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.EcloubAccount"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.SysLog"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.DeviceListActitviy"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.DeviceParamSet2"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.AccountDataUpdate"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.AccountDataUpdate2"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.FileExplorer"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.ZxingActivity"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.QRCodeBitmap"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.About"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.Help"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.TabSysDevset"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.Sevrset"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.DeviceRecordSearch"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.DeviceRecordSearchResultList"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.SplitScreenPlayer"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.FFmpeg_Player"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.GroupDeviceListActitviy"
+            android:screenOrientation="portrait" >
+        </activity>
+        <activity
+            android:configChanges="keyboardHidden|orientation"
+            android:name="com.montnets.android.zmon.GroupDeviceListActitviy1"
+            android:screenOrientation="portrait" >
+        </activity>
+    </application>
+    
+
+</manifest>

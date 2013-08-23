@@ -1,0 +1,295 @@
+package com.montnets.android.zmon;
+
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Message;
+import android.view.View;
+import android.view.View.OnFocusChangeListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.TextView;
+import android.widget.Toast;
+import cn.mw.p2p.Request.GetPwdRequest;
+import cn.mw.p2p.Request.MobileRegisterRequest;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import cn.mw.p2p.unitily.p2punitily;
+
+public class RegActitivty extends Activity {
+	
+	private EditText editTextUserID, editTextUserPwd, editTextDevID,
+			editTextDevPwd, editTextUserAccount, editTextCheckCode;
+	private Button btnReg, btngetCode;
+	private ProgressDialog dialog;
+	private Threadhandler thd;
+	private SharedPreferences sp;
+	private ImageButton imgbtnBack;
+	private String strResCheckCode = "";//服务返回的验证码
+	private TimeCount time;
+	private static String myphone = null;
+	private boolean IsCheckCode = false;
+	private String baseurlString;
+
+	
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(1);
+        setContentView(R.layout.reg_layout);
+        ExitApplication.getInstance().addActivity(this);
+        sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+        baseurlString = P2pBaseUrl.BaseUrl(sp);
+        time = new TimeCount(60000, 1000);//构造CountDownTimer对象
+        initUI();
+        if(editTextUserID.getText().toString().trim().equals(myphone)){
+        	btngetCode.setVisibility(View.VISIBLE);
+			editTextCheckCode.setVisibility(View.VISIBLE);
+			((TextView)findViewById(R.id.textView2)).setVisibility(View.VISIBLE);
+			IsCheckCode = true;
+		}else {
+			btngetCode.setVisibility(View.GONE);
+			editTextCheckCode.setVisibility(View.GONE);
+			((TextView)findViewById(R.id.textView2)).setVisibility(View.GONE);
+			IsCheckCode = false;
+		}
+	}
+	
+	private void initUI()
+	{
+		//获取本机号码
+		myphone = p2punitily.getPhoneNumber(RegActitivty.this);
+		if(!myphone.equals("") && myphone.substring(0, 3).equals("+86")){
+			myphone = myphone.substring(3);
+		}
+		editTextUserAccount = (EditText)findViewById(R.id.UserAccount);
+		editTextUserAccount.setOnFocusChangeListener(new OnFocusChangeListener() {
+			
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				// TODO Auto-generated method stub
+				if(editTextUserAccount.hasFocus() != true){
+					String strUserAccount = editTextUserAccount.getText().toString().trim();
+					editTextUserAccount.setText(strUserAccount);
+				}
+			}
+		});
+		editTextUserID = (EditText)findViewById(R.id.MobileTel);
+		editTextUserID.setText(myphone);
+
+		editTextUserPwd = (EditText)findViewById(R.id.TelPassword);
+		editTextDevID = (EditText)findViewById(R.id.DeviceID);
+		editTextDevPwd = (EditText)findViewById(R.id.DevPassword);
+		//验证码
+		editTextCheckCode = (EditText)findViewById(R.id.checkCode);
+		btnReg = (Button)findViewById(R.id.btnReg);
+		btnReg.setOnClickListener(new RegOnClickListener());
+		//获取验证码
+		btngetCode = (Button)findViewById(R.id.btnGetCode);
+		btngetCode.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				String strUserPhone = editTextUserID.getText().toString().trim();
+				if(strUserPhone.equals(""))
+				{
+					Toast.makeText(RegActitivty.this, "手机号码不能为空！", 0).show();
+					return;
+				}
+				if (!p2punitily.isMobileNO(strUserPhone)) {
+					EditText editTextPhone = (EditText)findViewById(R.id.MobileTel);
+					editTextPhone.setError("手机号码不合法");
+					return;
+				}
+				
+				time.start();
+				GetPwdRequest gpr = new GetPwdRequest();
+				gpr.setAccount("");
+				gpr.setPwdType(0);
+				gpr.setMobileTel(strUserPhone);
+				// 开启线程
+				thd = new Threadhandler(mHandler, gpr, baseurlString, "getAuthCode");
+				thd.start();
+			}
+		});
+		
+		imgbtnBack = (ImageButton) findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				RegActitivty.this.finish();
+			}
+		});
+		
+		//初始化隐藏验证码获取
+		btngetCode.setVisibility(View.GONE);
+		editTextCheckCode.setVisibility(View.GONE);
+		((TextView)findViewById(R.id.textView2)).setVisibility(View.GONE);
+		
+	}
+	
+	private final class RegOnClickListener implements View.OnClickListener
+	{
+
+		@Override
+		public void onClick(View v) {
+			String strUserAccount = editTextUserAccount.getText().toString().trim();
+			editTextUserAccount.setText(strUserAccount);
+			if(strUserAccount.equals(""))
+			{
+				editTextUserAccount.setError("用户帐号不能为空！");
+				return;
+			}
+			else {
+				String strTemp = p2punitily.getInputDataType(strUserAccount.substring(0, 1));
+				if (strTemp == null) {
+					editTextUserAccount.setError("用户帐号必须以字母开头！");
+					return;
+				}
+				if(strTemp.equals("0"))
+				{
+					editTextUserAccount.setError("用户帐号必须以字母开头！");
+					return;
+				}
+			}
+			String strUserPhone = editTextUserID.getText().toString().trim();
+			if(strUserPhone.equals("") || strUserPhone.equals("0"))
+			{
+				editTextUserID.setError("手机号码不能为空！");
+				return;
+			}
+			
+			//验证码
+			if (IsCheckCode) {
+				String strCheckCode = editTextCheckCode.getText().toString().trim();
+				if (strCheckCode.equals("")) {
+					editTextCheckCode.setError("验证码不能为空！");
+					return;
+				} else {
+					// 验证码是否正确
+					if (!strResCheckCode.equals(strCheckCode)) {
+						editTextCheckCode.setError("验证码不正确！");
+						return;
+					}
+				}
+			}
+			
+			String strUserPWD = editTextUserPwd.getText().toString().trim();
+			if(strUserPWD.equals(""))
+			{
+				editTextUserPwd.setError("用户密码不能为空！");
+				return;
+			}
+			String strDevID = editTextDevID.getText().toString().trim();
+//			if(strDevID.equals(""))
+//			{
+//				editTextDevID.setError("设备ID不能为空！");
+//				return;
+//			}
+			String strDevKey = editTextDevPwd.getText().toString().trim();
+//			if(strDevKey.equals(""))
+//			{
+//				editTextDevID.setError("设备密码不能为空！");
+//				return;
+//			}
+			//提交数据
+			MobileRegisterRequest mrr = new MobileRegisterRequest();
+			mrr.setAccount(strUserAccount);
+			mrr.setMobileTel(strUserPhone);
+			mrr.setTelPassword(strUserPWD);
+			mrr.setPwdType(0);
+			mrr.setDevID(strDevID);
+			mrr.setDevKey(strDevKey);
+			
+			dialog = ProgressDialog.show(RegActitivty.this, "", "正在提交数据，请等待...", true);
+			thd = new Threadhandler(mHandler, mrr, baseurlString);
+			thd.start();
+			
+		}
+		
+	}
+	
+	/**
+	 * 消息处理
+	 */
+	private final Handler mHandler = new Handler()
+	{
+		public void handleMessage(Message msg) {
+			if (dialog != null) {
+				dialog.dismiss();
+			}
+			int msgID = msg.what;
+			switch (msgID) {
+			case MsgEnum.SUCCESS:
+				Toast.makeText(RegActitivty.this, "用户注册成功", 0).show();
+				Intent intent = new Intent(RegActitivty.this,LoginActivity.class);
+				startActivity(intent);
+				break;
+			case MsgEnum.DEVICE_EXISTS_NULL:
+				Toast.makeText(RegActitivty.this, "设备不存在", 0).show();
+				break;
+			case MsgEnum.HASHTOKEN_NULL:
+				Toast.makeText(RegActitivty.this, "设备验证码错误", 0).show();
+				break;
+			case MsgEnum.ERROR:
+				Toast.makeText(RegActitivty.this, "该用户无法开通该业务", 0).show();
+				break;
+			case MsgEnum.SERVER_ERROR:
+				Toast.makeText(RegActitivty.this, "服务器异常", 0).show();
+				break;
+			case MsgEnum.ACCOUNT_NOT_ACTIVE:
+				Toast.makeText(RegActitivty.this, "用户未激活", 0).show();
+				break;
+			case MsgEnum.ACCOUNT_ISEXISTS:
+				Toast.makeText(RegActitivty.this, "用户已经注册", 0).show();
+				break;
+			case MsgEnum.MSGPWD_ERROR:
+				Toast.makeText(RegActitivty.this, "短信密码错误", 0).show();
+				break;
+			case MsgEnum.OK://获取验证码成功
+				strResCheckCode = msg.getData().getString("AuthCode");
+				break;
+			case MsgEnum.MAKE_ORDER_ERROR:
+				Toast.makeText(RegActitivty.this, "短信发送失败", 0).show();
+				break;
+			}
+
+		}
+	};
+
+	
+	/* 定义一个倒计时的内部类 */
+	class TimeCount extends CountDownTimer {
+		public TimeCount(long millisInFuture, long countDownInterval) {
+			super(millisInFuture, countDownInterval);// 参数依次为总时长,和计时的时间间隔
+		}
+
+		@Override
+		public void onFinish() {
+			// 计时完毕时触发
+			btngetCode.setClickable(true);
+			btngetCode.setEnabled(true);
+			editTextUserID.setClickable(true);
+			editTextUserID.setEnabled(true);
+			btngetCode.setText("获取验证");
+		}
+
+		@Override
+		public void onTick(long millisUntilFinished) {
+			// 计时过程显示
+			btngetCode.setClickable(false);
+			btngetCode.setEnabled(false);
+			editTextUserID.setClickable(false);
+			editTextUserID.setEnabled(false);
+			btngetCode.setText("获取中(" + (millisUntilFinished / 1000) + ")");
+		}
+	}
+}

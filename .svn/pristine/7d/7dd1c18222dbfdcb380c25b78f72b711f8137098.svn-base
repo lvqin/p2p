@@ -1,0 +1,402 @@
+﻿package com.montnets.android.zmon;
+
+import java.util.ArrayList;
+
+import cn.mw.p2p.Request.ControlPtzRequest;
+import cn.mw.p2p.Request.PlayURLRequest;
+import cn.mw.p2p.Request.StartRecordRequest;
+import cn.mw.p2p.adpter.DeviceAdapter;
+import cn.mw.p2p.adpter.VideoPlayAdapter;
+import cn.mw.p2p.bean.HomeBean;
+import cn.mw.p2p.bean.PointsSingleton;
+import cn.mw.p2p.bean.VedioPointBean;
+import cn.mw.p2p.handler.MethodListCount;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.graphics.Color;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.Gallery;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+import android.widget.VideoView;
+
+public class VideoPlayer extends Activity {
+
+	private ImageButton imgbtnPTZ;//云台控制
+	private ImageButton imgbtnPTZLeft;
+	private ImageButton imgbtnPTZRight;
+	private ImageButton imgbtnPTZUp;
+	private ImageButton imgbtnPTZDown;
+	private ImageButton imgbtnStartRec;
+	private ImageButton imgbtnStopRec;
+	private ViewGroup ViewGrpPTZ;
+	private ImageButton imgbtnBack;//返回
+	private ImageButton imgbtnFullSeern;//全屏
+	private VideoView vv;
+	private ProgressBar pb;
+	private static String userIDString;// 用户名
+	private static String userPwdString;// 用户密码
+	private static String playURL = null;// 播放地址
+	private ArrayList<VedioPointBean> videoPoints = null;
+	private Gallery pointsGallery;
+	private VedioPointBean point;
+	private String lastPlayVideoID = null;
+	private SharedPreferences sp;//配置
+	private ProgressDialog dialog;
+	private Threadhandler thd;
+	private String baseurlString;//基本URL
+	private String loginSession;
+	private DeviceAdapter deviceAdapter;
+	private Cursor cursor;
+	
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(1);
+        setContentView(R.layout.player_layout);
+        ExitApplication.getInstance().addActivity(this);
+        sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+        baseurlString = P2pBaseUrl.BaseUrl(sp);
+		String[] strUserList = sp.getString("userInfo", "").split(",");
+		userIDString = strUserList[0];
+		userPwdString = strUserList[1];
+		loginSession = strUserList[2];
+		System.out.println("VideoPlayer-用户信息：" + userIDString + "," + userPwdString + "," + loginSession);
+        initUI();
+        playEvent();
+    }
+	
+	/**
+	 * 初始化界面元素
+	 */
+	private void initUI()
+	{
+		imgbtnPTZ = (ImageButton)findViewById(R.id.zhangkai_buton);
+		imgbtnPTZ.setOnClickListener(this.PTZlistener);
+		
+		imgbtnPTZLeft = (ImageButton)findViewById(R.id.ptz_left);
+		imgbtnPTZLeft.setOnClickListener(this.controlPTZClickListener);
+		
+		imgbtnPTZRight = (ImageButton)findViewById(R.id.ptz_right);
+		imgbtnPTZRight.setOnClickListener(this.controlPTZClickListener);
+		
+		imgbtnPTZUp = (ImageButton)findViewById(R.id.ptz_up);
+		imgbtnPTZUp.setOnClickListener(this.controlPTZClickListener);
+		
+		imgbtnPTZDown = (ImageButton)findViewById(R.id.ptz_down);
+		imgbtnPTZDown.setOnClickListener(this.controlPTZClickListener);
+		
+		imgbtnStartRec = (ImageButton)findViewById(R.id.player_vidicon);
+		imgbtnStartRec.setOnClickListener(this.recordClickListener);
+		
+		imgbtnStopRec = (ImageButton)findViewById(R.id.player_pause);
+		imgbtnStopRec.setOnClickListener(this.recordClickListener);
+		
+		ViewGrpPTZ = (ViewGroup)findViewById(R.id.shangxia_andsoon);
+		imgbtnBack = (ImageButton)findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(this.BACKlistener);
+		vv = (VideoView)findViewById(R.id.playVideoView);
+		pb = (ProgressBar)findViewById(R.id.progressBar1);
+		pb.setVisibility(ProgressBar.INVISIBLE);
+		pointsGallery = (Gallery)findViewById(R.id.videopoints_gallery);
+		imgbtnFullSeern = (ImageButton)findViewById(R.id.player_fullscreen);
+		imgbtnFullSeern.setOnClickListener(this.fullSeernClickListener);
+	}
+	
+	//==========================点击事件操作===============================
+	// TODO 云台控制面板
+	private View.OnClickListener PTZlistener = new OnClickListener() {
+		
+		public void onClick(View v) {
+			if(ViewGrpPTZ.getVisibility()==View.VISIBLE)
+			{
+				ViewGrpPTZ.setVisibility(View.GONE);
+			}
+			else {
+				ViewGrpPTZ.setVisibility(View.VISIBLE);
+			}
+		}
+	};
+	// TODO 返回
+	private View.OnClickListener BACKlistener = new OnClickListener() {
+		
+		public void onClick(View v) {
+			VideoPlayer.this.finish();
+		}
+	};
+	//TODO 全屏
+	private View.OnClickListener fullSeernClickListener = new OnClickListener() {
+		
+		public void onClick(View v) {
+			
+			if (vv.isPlaying() && playURL != null) {
+				Intent intent = new Intent(VideoPlayer.this,FullScreenPlayer.class);
+				intent.putExtra("PlayURL", playURL);
+				startActivity(intent);
+			} else {
+				Toast.makeText(VideoPlayer.this, "请先打开视频，再执行全屏操作！", 0).show();
+			}
+		}
+	};
+	//TODO 云台控制
+	private View.OnClickListener controlPTZClickListener = new OnClickListener() {
+		ControlPtzRequest cpr = null;
+		@Override
+		public void onClick(View v) {
+			
+			if (!vv.isPlaying() || playURL == null) {
+				Toast.makeText(VideoPlayer.this, "请先打开视频，再执行云台操作！", 0).show();
+				return;
+			}
+			if(point.getPtzFlag() == 0)
+			{
+				Toast.makeText(VideoPlayer.this, "当前设备没有云台控制功能！", 0).show();
+				return;
+			}
+			cpr = new ControlPtzRequest();
+			cpr.setAccount(userIDString);
+			cpr.setDevID(point.getDevID());
+			cpr.setChannelNo(Integer.parseInt(point.getChannelNo()));
+			cpr.setLoginSession(loginSession);
+			switch (v.getId()) {
+			case R.id.ptz_left:			//左
+				cpr.setPtzDirection(3);
+				break;
+			case R.id.ptz_right:		//右
+				cpr.setPtzDirection(4);
+				break;
+			case R.id.ptz_up:			//上
+				cpr.setPtzDirection(1);
+				break;
+			case R.id.ptz_down:			//下
+				cpr.setPtzDirection(2);
+				break;
+			default:
+				break;
+			}
+			thd = new Threadhandler(handler, cpr, baseurlString);
+			thd.start();
+		}
+	};
+	//TODO 视频录像
+	private View.OnClickListener recordClickListener = new View.OnClickListener() {
+		StartRecordRequest srr = null;
+		@Override
+		public void onClick(View v) {
+			if (!vv.isPlaying() || playURL == null) {
+				Toast.makeText(VideoPlayer.this, "请先打开视频，再执行视频录像操作！", 0).show();
+				return;
+			}
+			srr = new StartRecordRequest();
+			srr.setAccount(userIDString);
+			srr.setDevID(point.getDevID());
+			srr.setChannelNo(Integer.parseInt(point.getChannelNo()));
+			srr.setLoginSession(loginSession);
+			switch (v.getId()) {
+			case R.id.player_vidicon:
+				srr.setStreamType(1);
+				srr.setRecordFlag(0);
+				srr.setTimeLen(5);
+				thd = new Threadhandler(handler, srr, baseurlString, "StartRecord");
+				break;
+			case R.id.player_pause:
+				thd = new Threadhandler(handler, srr, baseurlString, "StopRecord");
+				break;
+			default:
+				break;
+			}
+			thd.start();
+		}
+	};
+	
+	
+	
+	/**
+	 * TODO 播放视频
+	 */
+	private void startPlayVideo(final String struri)
+	{
+
+		Uri uri = Uri.parse(struri);
+		vv.setVideoURI(uri);
+		vv.requestFocus();
+		vv.setOnPreparedListener(new OnPreparedListener() {
+			@Override
+			public void onPrepared(MediaPlayer mp) {
+				pb.setVisibility(ProgressBar.INVISIBLE);
+				vv.setBackgroundColor(Color.argb(0, 0, 255, 0));
+				vv.start();
+				VideoPlayer.this.lastPlayVideoID = VideoPlayer.this.point.getDevID();
+				System.out.println("start");
+			}
+		});
+		
+		vv.setOnErrorListener(new OnErrorListener() {
+			@Override
+			public boolean onError(MediaPlayer arg0, int arg1, int arg2) {
+				VideoPlayer.this.lastPlayVideoID = null;
+				Toast.makeText(VideoPlayer.this, "打开视频失败，请重新打开！", 0).show();
+				pb.setVisibility(ProgressBar.INVISIBLE);
+				return true;
+			}
+		});
+	}
+	
+	
+	public boolean onKeyDown(int paramInt, KeyEvent paramKeyEvent) {
+		if (paramInt == 4)
+			new AlertDialog.Builder(this)
+					.setTitle("提示")
+					.setMessage("您确定退出视频播放")
+					.setPositiveButton("确定",new DialogInterface.OnClickListener() {
+								public void onClick(
+									DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+									VideoPlayer.this.finish();
+								}
+							})
+					.setNegativeButton("取消",new DialogInterface.OnClickListener() {
+								public void onClick(
+									DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+								}
+							}).setCancelable(false).show();
+		return true;
+	}
+	
+	/**
+	 * 播放视频操作事件
+	 */
+	private void playEvent() {
+		this.videoPoints = ((HomeBean) PointsSingleton.getPointsSingleton().getHomeBeanList().get(1)).getPointsList();
+		this.pointsGallery.setAdapter(new VideoPlayAdapter(this,getDataForSqlite()));
+		this.pointsGallery.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+				public void onItemClick(AdapterView<?> paramAnonymousAdapterView,
+						View paramAnonymousView, int paramAnonymousInt,long paramAnonymousLong) {
+					VideoPlayer.this.point = ((VedioPointBean) VideoPlayer.this.videoPoints.get(paramAnonymousInt));
+					if (VideoPlayer.this.point.isOnline()) {
+						pb.setVisibility(ProgressBar.VISIBLE);
+						if (VideoPlayer.this.point.getDevID().equals(VideoPlayer.this.lastPlayVideoID))
+						{
+							Toast.makeText(VideoPlayer.this, "您当前正在观看此视频设备", 0).show();
+							pb.setVisibility(ProgressBar.INVISIBLE);
+							return;
+						}
+						if(vv.isPlaying())
+						{
+							Toast.makeText(VideoPlayer.this, "正在观看实时视频，请勿重复操作！", 0).show();
+							pb.setVisibility(ProgressBar.INVISIBLE);
+							return;
+						}
+						dialog = ProgressDialog.show(VideoPlayer.this, "", "正在处理请求，请等待...", true);
+						//开启线程
+						PlayURLRequest prt = new PlayURLRequest();
+						prt.setAccount(userIDString);
+						prt.setLoginSession(loginSession);
+						prt.setDevID(point.getDevID());
+						prt.setChannelNo(Integer.parseInt(point.getChannelNo()));
+						prt.setStreamType(2);
+						thd = new Threadhandler(handler, prt, baseurlString, "GetPlayUrl");
+						thd.start();
+					} else {
+						Toast.makeText(VideoPlayer.this, "该视频设备不在线", 0).show();
+					}
+				}
+				
+			});
+		deviceAdapter.closeDB(cursor);
+		deviceAdapter.closeDB();
+	}
+	
+//	/**
+//	 * 获取数据
+//	 */
+//	private ArrayList<VedioPointBean> getData()
+//	{
+//		dialog = ProgressDialog.show(VideoPlayer.this, "", "获取数据中，请等待...", true);
+//		videoPoints = MethodListCount.getData(userIDString, userPwdString, videoPoints, point, sp);
+//		dialog.dismiss();
+//		return videoPoints;
+//	}
+	
+
+	/**
+	 * 获取设备列表
+	 * @return
+	 */
+	private ArrayList<VedioPointBean> getDataForSqlite()
+	{
+		deviceAdapter = new DeviceAdapter(VideoPlayer.this);
+		dialog = ProgressDialog.show(VideoPlayer.this, "", "获取数据中，请等待...", true);
+		videoPoints = MethodListCount.getDataArrayListForSqlite(cursor, deviceAdapter, VideoPlayer.this);
+		dialog.dismiss();
+		return videoPoints;
+
+	}
+	
+	
+	//TODO 线程操作 ===================================================
+	private final Handler handler = new Handler() {
+		public void handleMessage(Message msg) {
+			dialog.dismiss();
+    		int msgID = msg.what;
+    		switch(msgID)
+    		{
+				case MsgEnum.PLAYURL_SUCCESS:	//获取播放地址成功	
+					try {
+					playURL = msg.getData().getString("PLAYURL");
+					System.out.println("视频播放地址：" + playURL);
+					startPlayVideo(playURL);
+					} catch (Exception e) {
+						System.out.println("打开视频异常：" + e.getMessage());
+					}
+					break;
+				case MsgEnum.USERNAME_NULL:
+					Toast.makeText(VideoPlayer.this, "用户不存在！", 1).show();
+					break;
+				case MsgEnum.SESSION_TIMEOUT:
+					Toast.makeText(VideoPlayer.this, "SESSION超时！", 1).show();
+					break;
+				case MsgEnum.DEVICE_EXISTS_NULL:
+					Toast.makeText(VideoPlayer.this, "设备不存在！", 1).show();
+					break;
+				case MsgEnum.PLAYURL_FAILE:		//获取播放地址失败
+					Toast.makeText(VideoPlayer.this, "获取播放地址失败,请重试！", 0).show();
+					break;
+				case MsgEnum.SUCCESS:
+					Toast.makeText(VideoPlayer.this, "云台操作成功！", 1).show();
+					break;
+				case MsgEnum.STARTREC_SUCCESS:
+					Toast.makeText(VideoPlayer.this, "开始录像成功！", 1).show();
+					break;
+				case MsgEnum.STOPREC_SUCCESS:
+					Toast.makeText(VideoPlayer.this, "停止录像成功！", 1).show();
+					break;
+				default:
+					break;
+    		}
+		}
+	};
+	
+
+
+}

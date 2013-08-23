@@ -1,0 +1,676 @@
+package com.montnets.android.zmon;
+
+import org.ksoap2.serialization.PropertyInfo;
+import org.ksoap2.serialization.SoapObject;
+import org.libsdl.app.SDLActivity;
+import org.libsdl.app.SDLSurface;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.Toast;
+import android.widget.ToggleButton;
+import cn.mw.p2p.Request.ControlPtzRequest;
+import cn.mw.p2p.Request.MonGetAlarmSwitchRequest;
+import cn.mw.p2p.Request.MonSetAlarmSwitchRequest;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import cn.mw.p2p.unitily.WSUtils;
+import cn.mw.p2p.unitily.p2punitily;
+
+public class FullScreenPlayer2 extends Activity {
+	// member view
+	private FrameLayout frameContainer;
+	private SDLActivity mSoftPlayer = null;
+	private ProgressBar pb;
+	private Button btnPlayStop;
+	private Button btnCapture;
+	private ToggleButton btnVideotape;
+	private ToggleButton btnVoiceKey;
+	private ToggleButton btnDefenseKey;
+	private ImageView imgLeft;
+	private ImageView imgRight;
+	private ImageView imgUp;
+	private ImageView imgDown;
+	
+	// member data
+	private String strPlayURL = null;
+	
+	public final static int MSG_LOAD_FINISHED = 10;
+	public final static int MSG_LOAD_UNFINISHED = 11;
+	public final static int MSG_OPEN_ERROR = 12;
+	public final static int MSG_OPEN_OK = 13;
+	public final static int MSG_SEEK_UPDATE = 30;
+	
+	// gesture
+    public final int MOVE_LEFT = 3;
+    public final int MOVE_RIGHT = 4;
+    public final int MOVE_UP = 1;
+    public final int MOVE_DOWN = 2;
+	
+    // deal SetAlarmSwitch result
+    private Handler handler3 = new Handler(){
+    	public void handleMessage(Message msg){
+    		System.out.printf("AlarmSet[%d]", msg.what);
+    		switch(msg.what){
+    		case -1:
+    			Toast.makeText(FullScreenPlayer2.this, "连接服务器失败，请检查网络环境", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 0:
+    			if(btnDefenseKey.isChecked()){
+    				Toast.makeText(FullScreenPlayer2.this, "撤防成功", Toast.LENGTH_SHORT).show();
+    			}else{
+    				Toast.makeText(FullScreenPlayer2.this, "布防成功", Toast.LENGTH_SHORT).show();
+    			}
+    			
+    			btnDefenseKey.setChecked(!btnDefenseKey.isChecked());
+    			break;
+    		case 1:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，用户名不存在", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 2:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，会话超时，请重新登录", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 3:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，设备不存在", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 4:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，设备属于其他用户", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 5:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，设备不在线", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 6:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，请求发送失败", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 7:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，操作超时", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 8:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，参数无效", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 9:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 11:
+    			Toast.makeText(FullScreenPlayer2.this, "修改失败，用户已注销", Toast.LENGTH_SHORT).show();
+    			break;
+    			default:
+    				Toast.makeText(FullScreenPlayer2.this, "修改失败，未定义错误", Toast.LENGTH_SHORT).show();
+        			break;
+    		}
+    	}
+    };
+    
+    // deal GetAlarmSwitch result
+    private Handler handler2 = new Handler(){
+    	public void handleMessage(Message msg){
+    		System.out.printf("AlarmGet[%d,%d]", msg.what, msg.arg1);
+    		if(msg.what == 0){
+    			// show AlarmSwitch Button, can change status
+    			if(msg.arg1 == 1){
+    				btnDefenseKey.setChecked(true);
+    			}
+    			btnDefenseKey.setOnClickListener(new OnClickListener(){
+
+					@Override
+					public void onClick(View v) {
+						btnDefenseKey.setChecked(!btnDefenseKey.isChecked());
+						if(btnDefenseKey.isChecked()){
+							// 发送撤防命令
+							Toast.makeText(FullScreenPlayer2.this, "已发送撤防命令", Toast.LENGTH_SHORT).show();
+							progressOpenDefense(false);
+						}else{
+							// 发关布防命令
+							Toast.makeText(FullScreenPlayer2.this, "已发送布防命令", Toast.LENGTH_SHORT).show();
+							progressOpenDefense(true);
+						}
+					}
+    			});
+    		}else{
+    			// show AlarmSwitch Button, cannot change status
+    			btnDefenseKey.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+    				
+    				@Override
+    				public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+    					if(isChecked){
+    						Log.v("btnDefenseKey", "isChecked true");
+    						
+    						btnDefenseKey.setChecked(false);
+    						Toast.makeText(FullScreenPlayer2.this, "此设备不支持布防功能", Toast.LENGTH_SHORT).show();
+    					}else{
+    						Log.v("btnDefenseKey", "isChecked false");
+    					}
+    				}
+    			});
+    		}
+    		
+    		btnDefenseKey.setClickable(true);
+    	}
+    };
+    
+    // deal YunTai result
+    private Handler handler1 = new Handler(){
+    	public void handleMessage(Message msg){
+    		switch(msg.what){
+    		case -1:
+    			Toast.makeText(FullScreenPlayer2.this, "连接服务器失败，请检查网络环境", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 0:
+    			Toast.makeText(FullScreenPlayer2.this, "云台移动命令已成功发送", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 1:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，用户名不存在", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 2:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，会话超时，请重新登录", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 3:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，设备不存在", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 4:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，设备属于其他用户", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 5:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，设备不在线", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 6:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，请求发送失败", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 7:
+    			Toast.makeText(FullScreenPlayer2.this, "操作超时", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 8:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，设备不支持移动命令", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 9:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败", Toast.LENGTH_SHORT).show();
+    			break;
+    		case 11:
+    			Toast.makeText(FullScreenPlayer2.this, "操作失败，用户已注销", Toast.LENGTH_SHORT).show();
+    			break;
+    			default:
+    				Toast.makeText(FullScreenPlayer2.this, "操作失败，未定义错误", Toast.LENGTH_SHORT).show();
+        			break;
+    		}
+    	}
+    };
+    
+	// deal player msg
+	private Handler handler = new Handler(){
+		public void handleMessage(Message msg) {
+			if (!Thread.currentThread().isInterrupted()) {
+				System.out.println("receive msg : " + msg.what);
+				
+				if(msg.what > 0 && msg.what <5 ){
+					ShowYunTaiAnimation(msg.what);
+					progressYunTaiControl(msg.what);
+				}else{
+					switch (msg.what) {
+					case MSG_OPEN_OK:
+						Toast.makeText(FullScreenPlayer2.this, "连接视频成功，正在缓冲", Toast.LENGTH_LONG).show();
+						break;
+					case MSG_OPEN_ERROR:
+						break;
+					case MSG_LOAD_FINISHED:
+						pb.setVisibility(ProgressBar.INVISIBLE);
+						setControlHide(false);
+						break;
+					case MSG_LOAD_UNFINISHED:
+						break;
+					default:
+						break;
+					}
+				}
+			}
+			super.handleMessage(msg);
+		}
+
+		private void ShowYunTaiAnimation(int what) {
+			// 声明一个AlphaAnimation对象，从完全透明到不透明
+			AlphaAnimation alphaAnimation = new AlphaAnimation(0.0f, 1.0f);
+			// 设置动画持续时间为1秒钟
+			alphaAnimation.setDuration(1000);
+			// 设置重复次数
+			alphaAnimation.setRepeatCount(1);
+			alphaAnimation.setRepeatMode(Animation.REVERSE);
+			
+			switch(what){
+			case MOVE_LEFT:
+				alphaAnimation.setAnimationListener(new AnimationListener(){
+
+					@Override
+					public void onAnimationEnd(Animation animation) {
+						imgLeft.setVisibility(ImageView.INVISIBLE);
+					}
+
+					@Override
+					public void onAnimationRepeat(Animation animation) {
+						// TODO Auto-generated method stub
+						
+					}
+
+					@Override
+					public void onAnimationStart(Animation animation) {
+						// TODO Auto-generated method stub
+						imgLeft.setVisibility(ImageView.VISIBLE);
+					}
+					
+				});
+				imgLeft.startAnimation(alphaAnimation);
+				break;
+			case MOVE_RIGHT:
+				alphaAnimation.setAnimationListener(new AnimationListener(){
+
+					@Override
+					public void onAnimationEnd(Animation animation) {
+						imgRight.setVisibility(ImageView.INVISIBLE);
+					}
+
+					@Override
+					public void onAnimationRepeat(Animation animation) {
+						// TODO Auto-generated method stub
+						
+					}
+
+					@Override
+					public void onAnimationStart(Animation animation) {
+						// TODO Auto-generated method stub
+						imgRight.setVisibility(ImageView.VISIBLE);
+					}
+					
+				});
+				imgRight.startAnimation(alphaAnimation);
+				break;
+			case MOVE_UP:
+				alphaAnimation.setAnimationListener(new AnimationListener(){
+
+					@Override
+					public void onAnimationEnd(Animation animation) {
+						imgUp.setVisibility(ImageView.INVISIBLE);
+					}
+
+					@Override
+					public void onAnimationRepeat(Animation animation) {
+						// TODO Auto-generated method stub
+						
+					}
+
+					@Override
+					public void onAnimationStart(Animation animation) {
+						// TODO Auto-generated method stub
+						imgUp.setVisibility(ImageView.VISIBLE);
+					}
+					
+				});
+				imgUp.startAnimation(alphaAnimation);
+				break;
+			case MOVE_DOWN:
+				alphaAnimation.setAnimationListener(new AnimationListener(){
+
+					@Override
+					public void onAnimationEnd(Animation animation) {
+						imgDown.setVisibility(ImageView.INVISIBLE);
+					}
+
+					@Override
+					public void onAnimationRepeat(Animation animation) {
+						// TODO Auto-generated method stub
+						
+					}
+
+					@Override
+					public void onAnimationStart(Animation animation) {
+						// TODO Auto-generated method stub
+						imgDown.setVisibility(ImageView.VISIBLE);
+					}
+					
+				});
+				imgDown.startAnimation(alphaAnimation);
+				break;
+				default:
+					break;
+			}
+		}
+	};
+	
+	private String userIDString;
+	private String loginSession;
+	private String DevID;
+	private String ChannelNo;
+	private String PtzFlag;
+	private String baseurlString;
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);         
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
+				WindowManager.LayoutParams.FLAG_FULLSCREEN); 
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, 
+				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		setContentView(R.layout.fullscreenplayer2);
+		ExitApplication.getInstance().addActivity(this);
+		
+		initData();
+		initUI();
+		
+		startPlayVideo(strPlayURL);
+		progressGetDefenseStatus();
+	}
+	
+	private void progressOpenDefense(final boolean b) {
+		new Thread(new Runnable(){
+
+			@Override
+			public void run() {
+				MonSetAlarmSwitchRequest request = new MonSetAlarmSwitchRequest();
+				request.setAccount(userIDString);
+				request.setAlarmSwitch((b ? 1 : 0));
+				request.setChannelNo(Integer.parseInt(ChannelNo));
+				request.setDevID(DevID);
+				request.setLoginSession(loginSession);
+				
+				PropertyInfo pi = new PropertyInfo();
+				pi.setName("req");
+				pi.setType(request.getClass());
+				pi.setValue(request);
+				
+				Message msg = handler3.obtainMessage();
+				SoapObject soapObject = WSUtils.wsRequestStruct(baseurlString, "MonSetAlarmSwitch", pi, request, "MonSetAlarmSwitchRequest");
+				if (soapObject != null) {
+					Object objRes = (Object) soapObject.getProperty("Result");
+					String strReString = objRes.toString();
+					// 3. send handle msg
+					msg.what = Integer.parseInt(strReString);
+				}else{
+					msg.what = -1;
+				}
+				handler3.sendMessage(msg);
+			}
+			
+		}).start();
+	}
+	
+	private void progressGetDefenseStatus() {
+		btnDefenseKey.setClickable(false);
+		new Thread(new Runnable(){
+
+			@Override
+			public void run() {
+				MonGetAlarmSwitchRequest request = new MonGetAlarmSwitchRequest();
+				request.setAccount(userIDString);
+				request.setChannelNo(Integer.parseInt(ChannelNo));
+				request.setDevID(DevID);
+				request.setLoginSession(loginSession);
+				
+				PropertyInfo pi = new PropertyInfo();
+				pi.setName("req");
+				pi.setType(request.getClass());
+				pi.setValue(request);
+				
+				Message msg = handler2.obtainMessage();
+				SoapObject soapObject = WSUtils.wsRequestStruct(baseurlString, "MonGetAlarmSwitch", pi, request, "MonGetAlarmSwitchRequest");
+				if (soapObject != null) {
+					Object objRes = (Object) soapObject.getProperty("Result");
+					int AlarmSwitch = Integer.parseInt(soapObject.getProperty("AlarmSwitch").toString()) ;
+					Log.v("AlarmSwitch", soapObject.getProperty("AlarmSwitch").toString());
+					String strReString = objRes.toString();
+					// 3. send handle msg
+					msg.what = Integer.parseInt(strReString);
+					msg.arg1 = AlarmSwitch;
+				}else{
+					msg.what = -1;
+				}
+				handler2.sendMessage(msg);
+			}
+			
+		}).start();
+	}
+
+	protected void progressYunTaiControl(final int what) {
+		if(PtzFlag.equals("1")){
+			// support YunTai control
+			new Thread(new Runnable(){
+
+				@Override
+				public void run() {
+					ControlPtzRequest request = new ControlPtzRequest();
+					request.setAccount(userIDString);
+					request.setChannelNo(Integer.parseInt(ChannelNo));
+					request.setDevID(DevID);
+					request.setLoginSession(loginSession);
+					request.setPtzDirection(what);
+					
+					PropertyInfo pi = new PropertyInfo();
+					pi.setName("req");
+					pi.setType(request.getClass());
+					pi.setValue(request);
+					
+					Message msg = handler1.obtainMessage();
+					SoapObject soapObject = WSUtils.wsRequestStruct(baseurlString, "ControlPtz", pi, request, "ControlPtzRequest");
+					if (soapObject != null) {
+						Object objRes = (Object) soapObject.getProperty("Result");
+						String strReString = objRes.toString();
+						// 3. send handle msg
+						msg.what = Integer.parseInt(strReString);
+					}else{
+						msg.what = -1;
+					}
+					handler1.sendMessage(msg);
+				}
+				
+			}).start();
+			
+		}else{
+			// unsupport YunTaiControl
+			Log.v("ProgressYunTaiControl", "unSupport");
+			Toast.makeText(FullScreenPlayer2.this, "此设备不支持移动控制", Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	private void initData() {
+		strPlayURL = getIntent().getStringExtra("PlayURL");
+		
+		SharedPreferences sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+		String[] strUserList = sp.getString("userInfo", "").split(",");
+		userIDString = strUserList[0];
+		loginSession = strUserList[2];
+		strPlayURL = getIntent().getStringExtra("PlayURL");
+		DevID = getIntent().getStringExtra("DevID");
+		ChannelNo = getIntent().getStringExtra("ChannelNo");
+		PtzFlag = getIntent().getStringExtra("PtzFlag");
+		
+		baseurlString = P2pBaseUrl.BaseUrl(sp);
+	}
+
+	/**
+	 * 初始化UI
+	 */
+	private void initUI()
+	{
+		final String PLAY_START = "占击播放";
+		final String PLAY_PAUSE = "点击暂停";
+		
+		frameContainer = (FrameLayout) findViewById(R.id.framecontainer);
+		
+		pb = (ProgressBar)findViewById(R.id.progressBar1);
+		
+		imgLeft = (ImageView)findViewById(R.id.imageView2);
+		imgRight = (ImageView)findViewById(R.id.imageView4);
+		imgUp = (ImageView)findViewById(R.id.imageView3);
+		imgDown = (ImageView)findViewById(R.id.imageView1);
+		
+		btnPlayStop = (Button)findViewById(R.id.button1);
+		btnPlayStop.setText(PLAY_PAUSE);
+		btnPlayStop.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				if(btnPlayStop.getText().equals(PLAY_PAUSE)){
+					mSoftPlayer.stop();
+					btnPlayStop.setText(PLAY_START);
+				}else if(btnPlayStop.getText().equals(PLAY_START)){
+					mSoftPlayer.start();
+					btnPlayStop.setText(PLAY_PAUSE);
+				}
+			}
+		});
+		
+		btnCapture = (Button)findViewById(R.id.button2);
+		btnCapture.setOnClickListener(new View.OnClickListener() {
+			
+			@Override
+			public void onClick(View v) {
+				Log.v("btnCapture", "on click");
+				if(mSoftPlayer.isPlaying()){
+					Log.v("mSoftPlayer", "is playing");
+					if(p2punitily.getSDPath() == null)
+					{
+						Log.v("SDcard check", "no");
+						Toast.makeText(FullScreenPlayer2.this, "没有SD卡或SD卡被拔出", Toast.LENGTH_SHORT).show();
+						return;
+					}else{
+						Log.v("SDcard check", "yes");
+						String mRoot = p2punitily.getSDPath() + "/" + P2pBaseUrl.DIR_ROOT;
+						String mRoot_image = mRoot + "/" + P2pBaseUrl.DIR_ROOT_IMAGE;
+						int result = mSoftPlayer.CaptureImage(mRoot_image);
+						Log.v("capture result", String.valueOf(result));
+						
+						Toast.makeText(FullScreenPlayer2.this, "截图成功", Toast.LENGTH_SHORT).show();
+					}
+				}
+			}
+		});
+		
+		btnVideotape = (ToggleButton)findViewById(R.id.toggleButton1);
+		btnVideotape.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+			
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if(isChecked){
+					Log.v("btnVideotape", "isChecked true");
+					if(p2punitily.getSDPath() == null)
+					{
+						Log.v("SDcard check", "no");
+						Toast.makeText(FullScreenPlayer2.this, "没有SD卡或SD卡被拔出", Toast.LENGTH_SHORT).show();
+
+						btnVideotape.setChecked(false);
+					}else{
+						Log.v("SDcard check", "yes");
+						String mRoot = p2punitily.getSDPath() + "/" + P2pBaseUrl.DIR_ROOT;
+						String mRoot_record = mRoot + "/" + P2pBaseUrl.DIR_ROOT_VIDEO;
+						int result = mSoftPlayer.StartRecord(mRoot_record);
+						Log.v("record result", String.valueOf(result));
+					}
+				}else{
+					Log.v("btnVideotape", "isChecked false");
+					if(mSoftPlayer.isRecording()){
+						mSoftPlayer.StopRecord();
+					}
+				}
+			}
+		});
+		
+		btnVoiceKey = (ToggleButton)findViewById(R.id.toggleButton2);
+		btnVoiceKey.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+			
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if(isChecked){
+					Log.v("btnVoiceKey", "isChecked true");
+					mSoftPlayer.OpenSound();
+				}else{
+					Log.v("btnVoiceKey", "isChecked false");
+					mSoftPlayer.CloseSound();
+				}
+			}
+		});
+		
+		btnDefenseKey = (ToggleButton)findViewById(R.id.toggleButton3);
+		
+		setControlHide(true);
+	}
+	
+	private void setControlHide(boolean b) {
+		int visibleKey;
+		if(b){
+			visibleKey = View.INVISIBLE;
+		}else{
+			visibleKey = View.VISIBLE;
+		}
+		btnPlayStop.setVisibility(visibleKey);
+		btnCapture.setVisibility(visibleKey);
+		btnVideotape.setVisibility(visibleKey);
+		btnVoiceKey.setVisibility(visibleKey);
+		btnDefenseKey.setVisibility(visibleKey);
+	}
+
+	/**
+	 * TODO 播放视频
+	 */
+	private void startPlayVideo(final String struri)
+	{
+//		String fileName = "http://192.168.1.178/test.mp4";
+//		String fileName = "rtsp://192.168.1.21:45285/realplay?devid=051000008&channelno=0&streamtype=1&hashtoken=888888";
+//		String fileName = "rtsp://192.168.1.21:49653/realplay?devid=0000005&channelno=0&streamtype=2&hashtoken=e7953beaa013c415df02b02eba019e48";
+//		String fileName = "rtsp://192.168.1.21:51574/realplay?devid=004662480&channelno=0&streamtype=2&hashtoken=c00747440bbd2d62550da9886b71c39d";
+		mSoftPlayer = new SDLActivity(getApplication(), handler, struri);
+		SDLSurface surface = mSoftPlayer.getSDLSurface();
+
+		FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(
+				LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT);
+		params.gravity = Gravity.CENTER;
+		surface.setLayoutParams(params);
+		frameContainer.addView(surface);
+		
+	}
+	
+	
+	public boolean onKeyDown(int paramInt, KeyEvent paramKeyEvent) {
+		if (paramInt == 4)
+			new AlertDialog.Builder(this)
+					.setTitle("提示")
+					.setMessage("您确定退出视频播放")
+					.setPositiveButton("确定",new DialogInterface.OnClickListener() {
+								public void onClick(
+									DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+									FullScreenPlayer2.this.finish();
+								}
+							})
+					.setNegativeButton("取消",new DialogInterface.OnClickListener() {
+								public void onClick(
+									DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+								}
+							}).setCancelable(false).show();
+		return true;
+	}
+
+	protected void onDestroy() {
+			super.onDestroy();
+			mSoftPlayer.onDestroy();
+	}
+	
+}

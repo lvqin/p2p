@@ -1,0 +1,293 @@
+﻿package com.montnets.android.zmon;
+
+
+import java.util.List;
+
+import org.ksoap2.serialization.PropertyInfo;
+import org.ksoap2.serialization.SoapObject;
+
+import cn.mw.p2p.Request.MonGetServerInfoRequest;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import cn.mw.p2p.unitily.WSUtils;
+import cn.mw.p2p.unitily.WifiAdmin;
+import cn.mw.p2p.unitily.p2punitily;
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.wifi.ScanResult;
+import android.net.wifi.WifiConfiguration;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemSelectedListener;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
+import android.widget.Spinner;
+import android.widget.TextView;
+import android.widget.Toast;
+
+/**
+ * 生成二维码
+ * @author zhouwb
+ *
+ */
+public class ZxingActivity extends Activity {
+	
+	private String userIDString;
+	private String loginSession;
+	private String DevID;
+	private String ChannelNo;
+	private String PtzFlag;
+	private String mURL;
+	
+	
+	private ImageButton imgbtnBack;
+	private Button btn_GetZxing;
+	private EditText wifiPWD;
+	private Spinner spinnerSSID;
+	private Spinner spinnerNetType;
+    private WifiAdmin mWifiAdmin;   
+    private String strParamResult;
+    
+    private  String baseurlString;
+    // 扫描结果列表    
+    private List<ScanResult> list;    
+    private ScanResult mScanResult;
+    private String[] SSID;//SSID
+    private String[] SSIDCap;//WIFI加密方式
+    private static SharedPreferences sp;
+	private String SevrIP;
+	private String SevrPort;
+	
+	private TextView txtTextView1;
+	private TextView txtTextView2;
+    
+    
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(1);
+		setContentView(R.layout.zxing_layout);
+		ExitApplication.getInstance().addActivity(this);
+		sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+		SevrIP = sp.getString("serverIP", P2pBaseUrl.SERVER_IP);
+		getServerPort();
+		SevrPort = strParamResult;
+		mWifiAdmin = new WifiAdmin(ZxingActivity.this);
+		imgbtnBack = (ImageButton) findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(new backOnClickListener());
+		txtTextView1 = (TextView)findViewById(R.id.txtWifiSSID);
+		txtTextView2 = (TextView)findViewById(R.id.txtWifipwd);
+		baseurlString = P2pBaseUrl.BaseUrl(sp);
+		System.out.println("此时的URL是--------->"+baseurlString);
+		//网络类型[有线，无线]
+		spinnerNetType = (Spinner)findViewById(R.id.spinnernetType);
+		ArrayAdapter<String> adapterNetType = new ArrayAdapter<String>(
+				ZxingActivity.this, android.R.layout.simple_spinner_item,MsgEnum.NET_TYPE);
+		adapterNetType.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinnerNetType.setAdapter(adapterNetType);
+		spinnerNetType.setOnItemSelectedListener(new OnItemSelectedListener() {
+
+			@Override
+			public void onItemSelected(AdapterView<?> arg0, View arg1,
+					int arg2, long arg3) {
+				if(MsgEnum.NET_TYPE[arg2].equals("有线"))
+				{
+					txtTextView1.setVisibility(View.GONE);
+					txtTextView2.setVisibility(View.GONE);
+					spinnerSSID.setVisibility(View.GONE);
+					wifiPWD.setVisibility(View.GONE);
+				}
+				else {
+					txtTextView1.setVisibility(View.VISIBLE);
+					txtTextView2.setVisibility(View.VISIBLE);
+					spinnerSSID.setVisibility(View.VISIBLE);
+					wifiPWD.setVisibility(View.VISIBLE);
+				}
+				
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+
+		//绑定WIFI列表
+		String[] wifiTemp = getAllNetWorkList();
+		if(wifiTemp == null)
+		{
+			SSID = new String[] { "没有扫描到可用的WIFI网络!" };
+			SSIDCap = new String[] { "0" };
+		}
+		else {
+			SSID = wifiTemp[0].split(",");
+			SSIDCap = wifiTemp[1].split(",");
+		}
+		
+		spinnerSSID = (Spinner)findViewById(R.id.spinnerSSID);
+		ArrayAdapter<String> adapterSSID = new ArrayAdapter<String>(
+				ZxingActivity.this, android.R.layout.simple_spinner_item,SSID);
+		adapterSSID.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinnerSSID.setAdapter(adapterSSID);
+		
+		wifiPWD = (EditText) findViewById(R.id.edtWIFIPWD);
+		btn_GetZxing = (Button) findViewById(R.id.btn_getZxing);
+		btn_GetZxing.setOnClickListener(new getZxingOnClickListener());
+		
+		
+	}
+	
+	public  void getServerPort(){
+		new Thread(new Runnable() {
+			
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				String strParamResult = null;
+				sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+				baseurlString = P2pBaseUrl.BaseUrl(sp);
+				MonGetServerInfoRequest request = new MonGetServerInfoRequest();
+				request.setReqType(0);
+				PropertyInfo pinfo = new PropertyInfo();
+		  		pinfo.setName("req");
+		  		pinfo.setValue(request);
+		  		pinfo.setType(request.getClass());
+		  		System.out.println("========>"+baseurlString);
+		  		Message msg = handler.obtainMessage();
+				SoapObject soapObject = WSUtils.wsRequestStruct(baseurlString, "MonGetServerInfo",pinfo, request, "MonGetServerInfoRequest");
+				if(soapObject != null){
+				strParamResult = ((Object) soapObject.getProperty("InfoString")).toString();
+				}
+                msg.what = 2;
+                Bundle b = new Bundle();
+                b.putString("strParamResult", strParamResult);
+                msg.setData(b);
+                handler.sendMessage(msg);
+			}
+		}).start();
+			
+	}
+	
+	private Handler handler = new Handler(){
+    	public void handleMessage(Message msg){
+    		switch(msg.what){
+    		
+    		case 2:
+    			Bundle b = msg.getData();
+    			strParamResult = b.getString("strParamResult");
+    			System.out.println("--------------------->" + strParamResult);
+    			SevrPort = strParamResult;
+    			break;
+    			default:
+    				break;
+    		}
+    	}
+    };
+	
+	private final class backOnClickListener implements View.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			ZxingActivity.this.finish();
+		}
+	}
+	
+	/**
+	 * 生成二维码 SSID#SSID密码#加密方式#服务器IP#服务器端口
+	 *
+	 */
+	private final class getZxingOnClickListener implements View.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			String strSSID;
+			String strCap;
+			String qRCodeString = null;
+			Long netTypeIndex = spinnerNetType.getSelectedItemId();
+			String netSelectValue = MsgEnum.NET_TYPE[netTypeIndex.intValue()];
+			if(netSelectValue.equals("有线"))
+			{
+				qRCodeString = "###" + SevrIP + "#" + SevrPort;
+			}
+			else {
+				Long SSIDIndex = spinnerSSID.getSelectedItemId();
+				String SSIDValue = SSIDCap[SSIDIndex.intValue()];
+				if(SSIDValue.equals("0"))
+				{
+					Toast.makeText(ZxingActivity.this, "没有可用的WIFI网络！", 0).show();
+					return;
+				}
+				else {
+					String[] SSIDTemp = SSIDValue.split("@");
+					strSSID = SSIDTemp[0];
+					strCap = SSIDTemp[1];
+					System.out.println("======>" + strCap);
+				}
+				String strwifiPWD = wifiPWD.getText().toString().trim();
+				
+				qRCodeString = strSSID + "#" + strwifiPWD + "#" + strCap + "#" + SevrIP + "#" + SevrPort;
+			}
+			System.out.print("二维码信息：" + qRCodeString);
+			Intent intent = new Intent(ZxingActivity.this,QRCodeBitmap.class);
+			intent.putExtra("CodeString", qRCodeString);
+			startActivity(intent);
+		}
+	}
+	
+	
+	
+	
+	/**
+	 * 扫描WIFI列表
+	 * @return
+	 */
+	public String[] getAllNetWorkList() {
+		String[] str = new String[2];
+		String wifiSSID = null;
+		String wifiValue = null;
+		// 开始扫描网络
+		mWifiAdmin.openWifi();
+		mWifiAdmin.startScan();
+		list = mWifiAdmin.getWifiList();
+		if (list != null) {
+			for (int i = 0; i < list.size(); i++) {
+				// 得到扫描结果
+				mScanResult = list.get(i);
+				if(i == 0)
+				{
+					wifiSSID = mScanResult.SSID;
+					wifiValue = mScanResult.SSID + "@" + mScanResult.capabilities;
+				}
+				else {
+					wifiSSID += "," + mScanResult.SSID;
+					wifiValue += "," + mScanResult.SSID + "@" + mScanResult.capabilities;
+				}
+			}
+			str[0] = wifiSSID;
+			str[1] = wifiValue;
+		}
+		else {
+			str = null;
+		}
+		return str;
+	}
+	
+	/*private void initMember() {
+		SharedPreferences sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+		baseurlString = P2pBaseUrl.BaseUrl(sp);
+	}*/
+	
+	
+
+}

@@ -1,0 +1,183 @@
+package com.montnets.android.zmon;
+
+import cn.mw.p2p.Request.AddRecordPolicyRequest;
+import cn.mw.p2p.Request.DayPolicyAdd;
+import cn.mw.p2p.Request.WeekPolicyAdd;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import cn.mw.p2p.unitily.p2punitily;
+import android.app.Activity;
+import android.app.ProgressDialog;
+import android.content.SharedPreferences;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.Spinner;
+import android.widget.Toast;
+
+public class RecpolicySetActivity extends Activity {
+	
+	private String DevID = null;
+	private String ChannelNO = null;
+	private String Account = null;
+	private SharedPreferences sp;
+	private ImageButton imgbtnBack;
+	private String loginSession = null;
+	private Button btnSave;
+	private Spinner spinnerWeek;
+	private EditText startTime;
+	private EditText endTime;
+	private CheckBox chkRec;
+	private CheckBox chklooper;
+	private ProgressDialog dialog;
+	private Threadhandler thd;
+	private String baseurlString;
+	
+	@Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        requestWindowFeature(1);
+        setContentView(R.layout.recpolicyset); 
+        ExitApplication.getInstance().addActivity(this);
+        sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+        Account = sp.getString("userInfo", "").split(",")[0];
+        loginSession = sp.getString("userInfo", "").split(",")[2];
+        baseurlString = P2pBaseUrl.BaseUrl(sp);
+        initUI();
+        getintentData();
+    }
+
+	private void initUI() {
+		imgbtnBack = (ImageButton) findViewById(R.id.back_btn);
+		imgbtnBack.setOnClickListener(new backOnClickListener());
+		
+		startTime = (EditText)findViewById(R.id.starTime);
+		endTime = (EditText)findViewById(R.id.endTime);
+		chkRec = (CheckBox)findViewById(R.id.cbkRec);
+		chklooper = (CheckBox)findViewById(R.id.cbklooper);
+		
+		//绑定周期数据
+		spinnerWeek = (Spinner)findViewById(R.id.spinnerWeek);
+		ArrayAdapter<String> adapterWeek = new ArrayAdapter<String>(
+				RecpolicySetActivity.this, android.R.layout.simple_spinner_item,
+				MsgEnum.WEEK_NAME);
+		adapterWeek.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinnerWeek.setAdapter(adapterWeek);
+		
+		btnSave = (Button)findViewById(R.id.btnSave);
+		btnSave.setOnClickListener(new btnSaveOnClickListener());
+	}
+	
+	private void getintentData()
+	{
+        Bundle bundle = getIntent().getBundleExtra("PolicyInfo");
+        DevID = bundle.getString("DevID");
+        ChannelNO = bundle.getString("ChannelNO");
+        if(bundle.getString("SKIP_TYPE").equals("EDIT"))
+        {
+	        startTime.setText(bundle.getString("StartTime"));
+	        endTime.setText(bundle.getString("EndTime"));
+	        spinnerWeek.setSelection(p2punitily.getSelectionIndex(MsgEnum.WEEK_VALUE, String.valueOf(bundle.getInt("Week"))));
+			chkRec.setChecked(bundle.getInt("RecordFlag") == 0 ? false : true);
+			chklooper.setChecked(bundle.getInt("RecordFlag") == 0 ? false	: true);
+        }
+	}
+	
+	//返回
+	private final class backOnClickListener implements View.OnClickListener {
+
+		@Override
+		public void onClick(View v) {
+			RecpolicySetActivity.this.finish();
+		}
+	}
+	
+	//保存
+	private final class btnSaveOnClickListener implements View.OnClickListener
+	{
+
+		@Override
+		public void onClick(View v) {
+			DayPolicyAdd dpa;
+			WeekPolicyAdd wpa;
+			AddRecordPolicyRequest apr = new AddRecordPolicyRequest();;
+			String sTime = startTime.getText().toString().trim();
+			String eTime = endTime.getText().toString().trim();
+			if(sTime.equals("") || eTime.equals(""))
+			{
+				Toast.makeText(RecpolicySetActivity.this, "开始时间或结束时间不能为空!", 0).show();
+				return;
+			}
+			Long index = spinnerWeek.getSelectedItemId();
+			String weekValue = MsgEnum.WEEK_VALUE[index.intValue()];
+			//数据提交
+			if(weekValue.equals("0"))
+			{
+				dpa = new DayPolicyAdd();
+				dpa.setStreamType(1);
+				dpa.setRecordFlag(chklooper.isChecked() ? 1 : 0);
+				dpa.setStartTime(sTime);
+				dpa.setEndTime(eTime);
+				apr.setDayPolicyList(dpa);
+			}
+			else {
+				wpa = new WeekPolicyAdd();
+				wpa.setStreamType(1);
+				wpa.setRecordFlag(chklooper.isChecked() ? 1 : 0);
+				wpa.setStartTime(sTime);
+				wpa.setEndTime(eTime);
+				wpa.setWeek(Integer.parseInt(weekValue));
+				apr.setWeekPolicyList(wpa);
+			}
+			
+			apr.setAccount(Account);
+			apr.setLoginSession(loginSession);
+			apr.setDevID(DevID);
+			apr.setChannelNo(Integer.parseInt(ChannelNO));
+			
+			//开启线程
+			dialog = ProgressDialog.show(RecpolicySetActivity.this, "", "正在添加录像策略,请等待", true);
+			thd = new Threadhandler(mHandler, apr, baseurlString);
+			thd.start();
+		}
+	}
+	
+	private final Handler mHandler = new Handler(){
+		public void handleMessage(Message msg)
+		{
+			dialog.dismiss();
+			int msgID = msg.what;
+			switch (msgID) {
+			case MsgEnum.SUCCESS:
+				Toast.makeText(RecpolicySetActivity.this, "查询成功！", 0).show();
+				break;
+			case MsgEnum.OK:
+				Toast.makeText(RecpolicySetActivity.this, "添加录像策略成功！", 0).show();
+				break;
+			case MsgEnum.USERNAME_NULL:
+				Toast.makeText(RecpolicySetActivity.this, "用户不存在！", 0).show();
+				break;
+			case MsgEnum.SESSION_TIMEOUT:
+				Toast.makeText(RecpolicySetActivity.this, "SESSION超时！", 0).show();
+				break;
+			case MsgEnum.DEVICE_EXISTS_NULL:
+				Toast.makeText(RecpolicySetActivity.this, "设备不存在！", 0).show();
+				break;
+			case MsgEnum.SERVER_ERROR:
+				Toast.makeText(RecpolicySetActivity.this, "服务器异常！", 0).show();
+				break;
+			default:
+				break;
+			}
+		}
+	};
+	
+}

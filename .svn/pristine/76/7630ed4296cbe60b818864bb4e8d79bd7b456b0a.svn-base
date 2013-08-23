@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:background="#FFFFFFFF">
+
+<RelativeLayout
+	android:layout_width="fill_parent"
+	android:layout_height="470dp"
+	android:background="#FFFFFFFF" >
+
+    <RelativeLayout
+        android:id="@+id/top_title"
+        android:layout_width="fill_parent"
+        android:layout_height="60.0dip"
+        android:background="#FF117BB9" >
+
+        <ImageButton
+            android:id="@+id/back_btn"
+            android:layout_width="70dp"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/back_selector" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="注册帐号"
+            android:textColor="#FFFFFFFF"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/user_pass_title"
+        android:layout_width="match_parent"
+        android:layout_height="30.0dip"
+        android:layout_below="@+id/top_title"
+        android:background="#FF898989" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:gravity="center"
+            android:text="添加用户信息"
+            android:textSize="13.0sp" >
+        </TextView>
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/tvuser"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/user_pass_title"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="20dp"
+        android:layout_alignBaseline="@+id/UserAccount"
+        android:text="用户帐号："
+        android:textColor="#FF000000" />
+
+    <EditText
+        android:id="@+id/UserAccount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/user_pass_title"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="5dp"
+        android:layout_toRightOf="@+id/tvuser"
+        android:hint="帐号(必须以字母开头)" >
+    </EditText>
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/tvuser"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="30dp"
+        android:text="用户手机："
+        android:layout_alignBaseline="@+id/MobileTel"
+        android:textColor="#FF000000" />
+
+    <EditText
+        android:id="@+id/MobileTel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/UserAccount"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="0dp"
+        android:layout_toRightOf="@+id/textView1"
+        android:hint="请输入手机号码"
+        android:inputType="phone" >
+    </EditText>
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/textView1"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="30dp"
+        android:text="验  证  码："
+        android:layout_alignBaseline="@+id/checkCode"
+        android:textColor="#FF000000" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/textView2"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="30dp"
+        android:text="用户密码："
+        android:layout_alignBaseline="@+id/TelPassword"
+        android:textColor="#FF000000" />
+
+    <RelativeLayout
+        android:id="@+id/device_title"
+        android:layout_width="match_parent"
+        android:layout_height="30.0dip"
+        android:layout_below="@+id/TelPassword"
+        android:layout_marginTop="5dp"
+        android:background="#FF898989" >
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10.0dip"
+            android:gravity="center"
+            android:text="添加设备信息（选填项）"
+            android:textSize="13.0sp" >
+        </TextView>
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignRight="@+id/textView4"
+        android:layout_below="@+id/device_title"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="20dp"
+        android:text="设备ID："
+        android:layout_alignBaseline="@+id/DeviceID"
+        android:textColor="#FF000000" />
+
+    <EditText
+        android:id="@+id/DeviceID"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/device_title"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="5dp"
+        android:layout_toRightOf="@+id/textView3"
+        android:hint="请输入设备ID" >
+    </EditText>
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/textView3"
+        android:layout_marginLeft="10dip"
+        android:layout_marginTop="30dp"
+        android:text="设备验证码："
+        android:layout_alignBaseline="@+id/DevPassword"
+        android:textColor="#FF000000" />
+
+    <EditText
+        android:id="@+id/DevPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/DeviceID"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="0dp"
+        android:layout_toRightOf="@+id/textView4"
+        android:hint="输入设备验证码"
+        android:inputType="textPassword" >
+    </EditText>
+
+    <Button
+        android:id="@+id/btnGetCode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/TelPassword"
+        android:layout_toRightOf="@+id/checkCode"
+        android:text="获取验证码" />
+
+    <EditText
+        android:id="@+id/checkCode"
+        android:layout_width="140dip"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/MobileTel"
+        android:layout_below="@+id/MobileTel"
+        android:ems="10"
+        android:hint="输入验证码" >
+
+        <requestFocus />
+    </EditText>
+
+    <EditText
+        android:id="@+id/TelPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/checkCode"
+        android:layout_below="@+id/checkCode"
+        android:ems="10"
+        android:hint="输入用户密码"
+        android:inputType="textPassword" />
+
+    <Button
+    	android:id="@+id/btnReg"
+    	android:layout_width="200dip"
+    	android:layout_height="wrap_content"
+    	android:layout_below="@+id/DevPassword"
+    	android:layout_centerHorizontal="true"
+    	android:background="@drawable/button_selector"
+    	android:text="注册用户"
+    	android:textColor="#FFFFFFFF" />
+
+</RelativeLayout>
+</ScrollView>

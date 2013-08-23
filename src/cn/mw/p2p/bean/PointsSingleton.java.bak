@@ -1,0 +1,43 @@
+package cn.mw.p2p.bean;
+
+import java.util.ArrayList;
+
+public class PointsSingleton {
+	private static PointsSingleton PointsSingletonInstance = null;
+	private ArrayList<HomeBean> homeBeanList;
+
+	private void addDataForDebug() {
+		HomeBean localHomeBean1 = new HomeBean();
+		localHomeBean1.name = "父母家";
+		this.homeBeanList.add(localHomeBean1);
+		HomeBean localHomeBean2 = new HomeBean();
+		localHomeBean2.name = "自己家";
+		this.homeBeanList.add(localHomeBean2);
+		HomeBean localHomeBean3 = new HomeBean();
+		localHomeBean3.name = "岳父母家";
+		this.homeBeanList.add(localHomeBean3);
+		HomeBean localHomeBean4 = new HomeBean();
+		localHomeBean4.name = "我的商店";
+		this.homeBeanList.add(localHomeBean4);
+	}
+
+	public static PointsSingleton getPointsSingleton() {
+		try {
+			if (PointsSingletonInstance == null)
+				PointsSingletonInstance = new PointsSingleton();
+			PointsSingleton localPointsSingleton = PointsSingletonInstance;
+			return localPointsSingleton;
+		} finally {
+
+		}
+	}
+
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public ArrayList<HomeBean> getHomeBeanList() {
+		if (this.homeBeanList == null) {
+			this.homeBeanList = new ArrayList();
+			addDataForDebug();
+		}
+		return this.homeBeanList;
+	}
+}

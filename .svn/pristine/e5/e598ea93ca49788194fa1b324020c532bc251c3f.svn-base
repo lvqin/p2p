@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <RelativeLayout
+        android:id="@+id/top_title"
+        android:layout_width="fill_parent"
+        android:layout_height="60.0dip"
+        android:background="#FF117BB9" >
+
+        <ImageButton
+            android:id="@+id/back_btn"
+            android:layout_width="60dp"
+            android:layout_height="50dp"
+            android:layout_centerVertical="true"
+            android:background="@drawable/back_selector" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:text="系统设置"
+            android:textColor="#FFFFFFFF"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+
+    <LinearLayout
+        android:id="@+id/lineDevmanage"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_below="@+id/top_title"
+        android:layout_centerHorizontal="true"
+        android:background="@drawable/mainpage_body"
+        android:orientation="vertical" >
+
+        <RelativeLayout
+            android:id="@+id/lineDev"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="15dp"
+            android:background="@drawable/selector_bg"
+            android:longClickable="true"
+            android:orientation="vertical" >
+
+            <ImageView
+                android:id="@+id/devSet"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/shebeicelue" />
+
+            <TextView
+                android:id="@+id/devManage"
+                android:layout_width="250dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="40dp"
+                android:gravity="left|center_vertical"
+                android:paddingLeft="30dp"
+                android:text="设备管理"
+                android:textColor="#FF000000"
+                android:textSize="23.0sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/linezxing"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/selector_bg"
+            android:longClickable="true"
+            android:orientation="vertical" >
+
+            <ImageView
+                android:id="@+id/imgzxing"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/devinit" />
+
+            <TextView
+                android:id="@+id/getzxing"
+                android:layout_width="250dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="40dp"
+                android:gravity="left|center_vertical"
+                android:paddingLeft="30dp"
+                android:text="设备初始化"
+                android:textColor="#FF000000"
+                android:textSize="23.0sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/linevideo"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/selector_bg"
+            android:longClickable="true"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <ImageView
+                android:id="@+id/imgVideo"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/viedocelue" />
+
+            <TextView
+                android:id="@+id/videoCelue"
+                android:layout_width="250dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="40dp"
+                android:gravity="left|center_vertical"
+                android:paddingLeft="30dp"
+                android:text="录像策略"
+                android:textColor="#FF000000"
+                android:textSize="23.0sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/linesafe"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/selector_bg"
+            android:longClickable="true"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <ImageView
+                android:id="@+id/imgsafe"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/safe" />
+
+            <TextView
+                android:id="@+id/safeCelue"
+                android:layout_width="250dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="40dp"
+                android:gravity="left|center_vertical"
+                android:paddingLeft="30dp"
+                android:text="安全策略"
+                android:textColor="#FF000000"
+                android:textSize="23.0sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/lineuserset"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/selector_bg"
+            android:longClickable="true"
+            android:orientation="vertical" >
+
+            <ImageView
+                android:id="@+id/imguser"
+                android:layout_width="35dp"
+                android:layout_height="35dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/yonghu" />
+
+            <TextView
+                android:id="@+id/userCelue"
+                android:layout_width="250dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="40dp"
+                android:gravity="left|center_vertical"
+                android:paddingLeft="30dp"
+                android:text="用户设置"
+                android:textColor="#FF000000"
+                android:textSize="23.0sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/lineupdate"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="5dp"
+            android:background="@drawable/selector_bg"
+            android:longClickable="true"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <ImageView
+                android:id="@+id/imgupdate"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/updata" />
+
+            <TextView
+                android:id="@+id/updateCelue"
+                android:layout_width="250dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="40dp"
+                android:gravity="left|center_vertical"
+                android:paddingLeft="30dp"
+                android:text="远程升级"
+                android:textColor="#FF000000"
+                android:textSize="23.0sp" />
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:id="@+id/linelog"
+            android:layout_width="match_parent"
+            android:layout_height="45dp"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/selector_bg"
+            android:longClickable="true"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <ImageView
+                android:id="@+id/imglog"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_centerVertical="true"
+                android:layout_marginLeft="10dp"
+                android:background="@drawable/quit" />
+
+            <TextView
+                android:id="@+id/logCelue"
+                android:layout_width="250dp"
+                android:layout_height="45dp"
+                android:layout_marginLeft="40dp"
+                android:gravity="left|center_vertical"
+                android:paddingLeft="30dp"
+                android:text="日志查询"
+                android:textColor="#FF000000"
+                android:textSize="23.0sp" />
+        </RelativeLayout>
+    </LinearLayout>
+
+    <RelativeLayout
+        android:id="@+id/lineAboutus"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="240dp"
+        android:background="@drawable/selector_bg"
+        android:longClickable="true"
+        android:orientation="vertical" >
+
+        <ImageView
+            android:id="@+id/imguser"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/updata" />
+
+        <TextView
+            android:id="@+id/aboutUs"
+            android:layout_width="250dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="40dp"
+            android:gravity="left|center_vertical"
+            android:paddingLeft="30dp"
+            android:text="关于"
+            android:textColor="#FF000000"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+
+    <RelativeLayout
+        android:id="@+id/lineHelp"
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="295dp"
+        android:background="@drawable/selector_bg"
+        android:longClickable="true"
+        android:orientation="vertical" >
+
+        <ImageView
+            android:id="@+id/imgh"
+            android:layout_width="35dp"
+            android:layout_height="35dp"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="10dp"
+            android:background="@drawable/help" />
+
+        <TextView
+            android:id="@+id/help"
+            android:layout_width="250dp"
+            android:layout_height="45dp"
+            android:layout_marginLeft="40dp"
+            android:gravity="left|center_vertical"
+            android:paddingLeft="30dp"
+            android:text="帮助"
+            android:textColor="#FF000000"
+            android:textSize="23.0sp" />
+    </RelativeLayout>
+
+</RelativeLayout>

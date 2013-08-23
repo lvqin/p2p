@@ -1,0 +1,833 @@
+package com.montnets.android.zmon;
+
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
+
+import cn.mw.p2p.Request.ControlPtzRequest;
+import cn.mw.p2p.Request.PlayURLRequest;
+import cn.mw.p2p.Request.StartRecordRequest;
+import cn.mw.p2p.handler.Threadhandler;
+import cn.mw.p2p.unitily.ExitApplication;
+import cn.mw.p2p.unitily.GestureListener;
+import cn.mw.p2p.unitily.MsgEnum;
+import cn.mw.p2p.unitily.P2pBaseUrl;
+import cn.mw.p2p.unitily.p2punitily;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
+import android.content.Context;
+import android.content.DialogInterface;
+import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnErrorListener;
+import android.media.MediaPlayer.OnPreparedListener;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
+import android.util.Log;
+import android.view.Gravity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.Animation.AnimationListener;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.widget.VideoView;
+
+public class FullScreenPlayer extends Activity {
+	
+	private VideoView vvplayer;
+	private String strPlayURL = null;
+	private ProgressBar pb;
+	private ImageView imgDirect_up;
+	private ImageView imgDirect_down;
+	private ImageView imgDirect_left;
+	private ImageView imgDirect_right;
+	private RelativeLayout RL_bar;
+	private RelativeLayout RL_barContent;
+	private String userIDString;// 用户名
+	private SharedPreferences sp;//配置
+	private String loginSession;
+	private Threadhandler thd;
+	private String baseurlString;//基本URL
+	private String DevID;
+	private String ChannelNo;
+	private ControlPtzRequest cpr = null;
+	private String PtzFlag;
+	private boolean barOnShow = true;
+	private boolean recentClicked = false;
+	//图标切换标记
+	private boolean isIconChange = false;				//布/撤防图标切换标记
+	private boolean isIconChangeStreamType = true;		//标清/高清切换标记
+	private boolean isIconChangePlayOrPause = false;	//播放/暂停切换标记
+	private boolean isIconChangeRecord = false;			//开启和关门手动录像
+	//操作工具
+	private ImageView imgAlarm;			//布/撤防
+	private ImageView imgStreamType;	//标清 1/高清 2 
+	private ImageView imgPlayOrStop;	//播放/暂停
+	private ImageView imgImage;			//拍照
+	private ImageView imgRecorder;		//录像
+	private ImageView imgListener;		//监听
+	private ImageView imgSound;			//对讲
+	private ImageView imgBack;			//返回
+	//操作工具文本
+	private TextView tvAlarm, tvStreamType, tvPlayOrStop;
+	
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		requestWindowFeature(Window.FEATURE_NO_TITLE);         
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, 
+				WindowManager.LayoutParams.FLAG_FULLSCREEN); 
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, 
+				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		setContentView(R.layout.fullscreenplayer);
+		ExitApplication.getInstance().addActivity(this);
+		initData();
+		initUI();
+		initIconStatus();
+		initThread();
+		startPlayVideo(strPlayURL);
+	}
+	
+	/**
+	 * 初始化数据
+	 */
+	private void initData()
+	{
+        sp = getSharedPreferences("mwp2p", MODE_PRIVATE);
+        baseurlString = P2pBaseUrl.BaseUrl(sp);
+		String[] strUserList = sp.getString("userInfo", "").split(",");
+		userIDString = strUserList[0];
+		loginSession = strUserList[2];
+		strPlayURL = getIntent().getStringExtra("PlayURL");
+		DevID = getIntent().getStringExtra("DevID");
+		ChannelNo = getIntent().getStringExtra("ChannelNo");
+		PtzFlag = getIntent().getStringExtra("PtzFlag");
+		//云台对象
+		cpr = new ControlPtzRequest();
+		cpr.setAccount(userIDString);
+		cpr.setLoginSession(loginSession);
+		cpr.setDevID(DevID);
+		cpr.setChannelNo(Integer.parseInt(ChannelNo));
+	}
+	
+	/**
+	 * 初始化UI
+	 */
+	private void initUI()
+	{
+		vvplayer = (VideoView)findViewById(R.id.vvPlayer);
+		pb = (ProgressBar)findViewById(R.id.progressBar1);
+		RL_bar = (RelativeLayout)findViewById(R.id.RelativeLayout_Bar);
+		RL_barContent = (RelativeLayout)findViewById(R.id.RL_barContent);
+		RL_barContent.setLongClickable(true);
+		RL_barContent.setOnTouchListener(new GestureListener(mHandler));
+		imgDirect_up = (ImageView)findViewById(R.id.iv_Up);
+		imgDirect_down = (ImageView)findViewById(R.id.iv_Down);
+		imgDirect_left = (ImageView)findViewById(R.id.iv_Left);
+		imgDirect_right = (ImageView)findViewById(R.id.iv_Right);
+		//操作工具条
+		imgAlarm = (ImageView)findViewById(R.id.iv_alarm);
+		imgAlarm.setOnClickListener(this.ToolOnItemClickListener);
+		
+		imgStreamType = (ImageView)findViewById(R.id.iv_StreamType);
+		imgStreamType.setOnClickListener(this.ToolOnItemClickListener);
+		
+		imgPlayOrStop = (ImageView)findViewById(R.id.iv_videoplay);
+		imgPlayOrStop.setOnClickListener(this.ToolOnItemClickListener);
+		
+		imgImage = (ImageView)findViewById(R.id.iv_image);
+		imgImage.setOnClickListener(this.ToolOnItemClickListener);
+		
+		imgRecorder = (ImageView)findViewById(R.id.iv_rec);
+		imgRecorder.setOnClickListener(this.ToolOnItemClickListener);
+		
+		imgListener = (ImageView)findViewById(R.id.iv_listenter);
+		imgListener.setOnClickListener(this.ToolOnItemClickListener);
+		
+		imgSound = (ImageView)findViewById(R.id.iv_sound);
+		imgSound.setOnClickListener(this.ToolOnItemClickListener);
+		
+		imgBack = (ImageView)findViewById(R.id.iv_bendiRec);
+		imgBack.setOnClickListener(this.ToolOnItemClickListener);
+		
+		//操作工具文本
+		tvAlarm = (TextView)findViewById(R.id.tv_alarm);
+		tvStreamType = (TextView)findViewById(R.id.tv_StreamType);
+		tvPlayOrStop = (TextView)findViewById(R.id.tv_videoplay);
+		
+		imgDirect_up.setVisibility(ImageView.INVISIBLE);
+		imgDirect_down.setVisibility(ImageView.INVISIBLE);
+		imgDirect_left.setVisibility(ImageView.INVISIBLE);
+		imgDirect_right.setVisibility(ImageView.INVISIBLE);
+	}
+	
+	/**
+	 * 更新图标的状态
+	 */
+	private void initIconStatus()
+	{
+		//布防撤防
+		imgAlarm.setBackgroundResource(R.drawable.bufang);
+		imgPlayOrStop.setBackgroundResource(R.drawable.pause);
+		//标/高清
+		imgStreamType.setBackgroundResource(R.drawable.hd);
+	}
+	
+	/**
+	 * TODO 播放视频
+	 */
+	private void startPlayVideo(final String struri)
+	{
+		
+		Uri uri = Uri.parse(struri);
+//		try {
+//			FFVideoView.setVideoPath(struri);
+//			FFVideoView.requestFocus();
+//			FFVideoView.setBackgroundColor((Color.argb(0, 0, 255, 0)));
+//		} catch (IllegalArgumentException e) {
+//			e.printStackTrace();
+//		} catch (IllegalStateException e) {
+//			e.printStackTrace();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+		vvplayer.setVideoURI(uri);
+		
+//		vvplayer.setMediaController(new MediaController(this));  //视频播放工具条
+		vvplayer.requestFocus();
+		vvplayer.setOnPreparedListener(new OnPreparedListener() {
+			@Override
+			public void onPrepared(MediaPlayer mp) {
+				final Timer mtimer = new Timer();
+				TimerTask task;
+				final Handler handler = new Handler() {
+				    @Override
+				    public void handleMessage(Message msg) {
+				        // TODO Auto-generated method stub
+				        // 要做的事情
+				    	pb.setVisibility(ProgressBar.INVISIBLE);
+				        super.handleMessage(msg);
+				    }
+				};
+				task = new TimerTask() {
+				    @Override
+				    public void run() {
+				        // TODO Auto-generated method stub
+				        Message message = new Message();
+				        message.what = 1;
+				        handler.sendMessage(message);
+				    }
+				};
+				mtimer.schedule(task, 5000, 5000);
+				vvplayer.setBackgroundColor(Color.argb(0, 0, 255, 0));
+				vvplayer.start();
+				System.out.println("start");
+			}
+		});
+		
+		vvplayer.setOnErrorListener(new OnErrorListener() {
+			@Override
+			public boolean onError(MediaPlayer arg0, int arg1, int arg2) {
+				Log.e("VideoView OnErrorListener", String.valueOf(arg1) + " " + String.valueOf(arg2));
+				TimerTask tt = new TimerTask(){
+
+					@Override
+					public void run() {
+						Message msg = new Message();
+						msg.what = MsgEnum.PLAYVIDEO_ERROR;
+						Bundle b = new Bundle();
+						b.putString("strPlayURL", struri);
+						msg.setData(b);
+						mHandler.sendMessage(msg);
+					}
+					
+				};
+				Timer t = new Timer(true);
+				t.schedule(tt, 5000);
+				return true;
+			}
+		});
+	}
+	
+	
+	public boolean onKeyDown(int paramInt, KeyEvent paramKeyEvent) {
+		if (paramInt == 4)
+			new AlertDialog.Builder(this)
+					.setTitle("提示")
+					.setMessage("您确定退出视频播放")
+					.setPositiveButton("确定",new DialogInterface.OnClickListener() {
+								public void onClick(
+									DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+									vvplayer.stopPlayback();
+									FullScreenPlayer.this.finish();
+								}
+							})
+					.setNegativeButton("取消",new DialogInterface.OnClickListener() {
+								public void onClick(
+									DialogInterface paramAnonymousDialogInterface,int paramAnonymousInt) {
+								}
+							}).setCancelable(false).show();
+		return true;
+	}
+	
+	//TODO 消息处理
+	private final Handler mHandler = new Handler(){
+		public void handleMessage(Message msg){
+			int msgId = msg.what;
+			switch (msgId) {
+			case MsgEnum.PTZ_UP:
+				if(!PtzFlag.equals("0"))
+				{
+					cpr.setPtzDirection(1);
+					thd = new Threadhandler(mHandler, cpr, baseurlString);
+					thd.start();
+					showDirection(0);
+				}
+				else {
+					Toast.makeText(FullScreenPlayer.this, "该设备不支持云台控制", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case MsgEnum.PTZ_DOWN:
+				if(!PtzFlag.equals("0"))
+				{
+					cpr.setPtzDirection(2);
+					thd = new Threadhandler(mHandler, cpr, baseurlString);
+					thd.start();
+					showDirection(1);
+				}
+				else {
+					Toast.makeText(FullScreenPlayer.this, "该设备不支持云台控制", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case MsgEnum.PTZ_LEFT:
+				if(!PtzFlag.equals("0"))
+				{
+					cpr.setPtzDirection(3);
+					thd = new Threadhandler(mHandler, cpr, baseurlString);
+					thd.start();
+					showDirection(2);
+				}
+				else {
+					Toast.makeText(FullScreenPlayer.this, "该设备不支持云台控制", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case MsgEnum.PTZ_RIGHT:
+				if(!PtzFlag.equals("0"))
+				{
+					cpr.setPtzDirection(4);
+					thd = new Threadhandler(mHandler, cpr, baseurlString);
+					thd.start();
+					showDirection(3);
+				}
+				else {
+					Toast.makeText(FullScreenPlayer.this, "该设备不支持云台控制", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case MsgEnum.SINGLEDOWN:
+				if(barOnShow)
+				{
+					Animation animation2 = AnimationUtils.loadAnimation(FullScreenPlayer.this, R.anim.popout);
+					RL_bar.startAnimation(animation2);
+					barOnShow = false;
+					setBarEnable(false);
+				}else{
+					Animation animation = AnimationUtils.loadAnimation(FullScreenPlayer.this, R.anim.popin);
+					RL_bar.startAnimation(animation);
+					barOnShow = true;
+					setBarEnable(true);
+				}
+				break;
+			case MsgEnum.PLAYVIDEO_ERROR:
+				Toast.makeText(FullScreenPlayer.this, "视频获取失败，重连中...", Toast.LENGTH_SHORT).show();
+				Bundle b = msg.getData();
+				vvplayer.stopPlayback();
+				vvplayer.setVideoURI(Uri.parse(b.getString("strPlayURL").toString()));
+				break;
+			case MsgEnum.SUCCESS:
+				if (isIconChange) {
+					imgAlarm.setBackgroundResource(R.drawable.bufang);
+					tvAlarm.setText("布防");
+//					cpr.setALarmSwitch(0);
+				} else {
+					imgAlarm.setBackgroundResource(R.drawable.cefang);
+					tvAlarm.setText("撤防");
+//					cpr.setALarmSwitch(1);
+				}
+				isIconChange = !isIconChange;
+				sp.edit().putBoolean("isIconChange", isIconChange).commit();
+				Toast.makeText(FullScreenPlayer.this, "布防状态设置成功", Toast.LENGTH_SHORT).show();
+				break;
+			case MsgEnum.MOVE_SUCCESS:
+				{
+					Toast.makeText(FullScreenPlayer.this, "云台移动命令已发送", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case MsgEnum.OK:
+//				Toast.makeText(FullScreenPlayer.this, "布防状态查询成功", Toast.LENGTH_SHORT).show();
+				String ALarmSwitch = msg.getData().getString("ALarmSwitch");//0-关、1-开
+				if(ALarmSwitch.equals("0"))
+				{
+					imgAlarm.setBackgroundResource(R.drawable.bufang);
+					tvAlarm.setText("布防");
+					isIconChange = false;
+				}else {
+					imgAlarm.setBackgroundResource(R.drawable.cefang);
+					tvAlarm.setText("撤防");
+					isIconChange = true;
+				}
+				break;
+			case MsgEnum.USERNAME_NULL:
+				Toast.makeText(FullScreenPlayer.this, "用户不存在", Toast.LENGTH_SHORT).show();
+				break;
+			case MsgEnum.SESSION_TIMEOUT:
+				Toast.makeText(FullScreenPlayer.this, "SESSION超时", Toast.LENGTH_SHORT).show();
+				break;
+			case MsgEnum.DEVICE_EXISTS_NULL:
+				Toast.makeText(FullScreenPlayer.this, "设备不存在", Toast.LENGTH_SHORT).show();
+				break;
+			case MsgEnum.PLAYURL_SUCCESS:	//获取播放地址成功	
+				strPlayURL = msg.getData().getString("PLAYURL");
+				System.out.println("标高清切换：" + strPlayURL);
+				if (strPlayURL != null) {
+					pb.setVisibility(ProgressBar.VISIBLE);
+					startPlayVideo(strPlayURL);
+				} else {
+					Toast.makeText(FullScreenPlayer.this, "获取播放地址失败！", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case MsgEnum.STARTREC_SUCCESS:
+				Toast.makeText(FullScreenPlayer.this, "开启设备录像成功", Toast.LENGTH_SHORT).show();
+				break;
+			case MsgEnum.STOPREC_SUCCESS:
+				Toast.makeText(FullScreenPlayer.this, "停止设备录像成功", Toast.LENGTH_SHORT).show();
+				break;
+			case MsgEnum.GETALARMSTATUS_FAILE:
+//				Toast.makeText(FullScreenPlayer.this, "布防状态查询失败", Toast.LENGTH_SHORT).show();
+				imgAlarm.setEnabled(false);
+				imgAlarm.setVisibility(ImageView.INVISIBLE);
+				TextView tv = (TextView)findViewById(R.id.tv_alarm);
+				tv.setVisibility(TextView.INVISIBLE);
+				break;
+			case MsgEnum.SETALARMSTATUS_FAILE:
+				Toast.makeText(FullScreenPlayer.this, "布防状态设置失败", Toast.LENGTH_SHORT).show();
+				break;
+			case MsgEnum.SERVER_ERROR:
+				Toast.makeText(FullScreenPlayer.this, "操作失败", Toast.LENGTH_SHORT).show();
+				break;
+			default:
+				break;
+			}
+		}
+	};
+
+	//TODO 设置云台转动的方向箭头显示
+	private void showDirection(int direction) {
+		// 声明一个AlphaAnimation对象，从完全透明到不透明
+		AlphaAnimation alphaAnimation = new AlphaAnimation(0.0f, 1.0f);
+		// 设置动画持续时间为1秒钟
+		alphaAnimation.setDuration(1000);
+		// 设置重复次数
+		alphaAnimation.setRepeatCount(1);
+		alphaAnimation.setRepeatMode(Animation.REVERSE);
+		switch (direction) {
+		case 0: // up
+			Log.v("向上", "向上");
+			imgDirect_up.setVisibility(ImageView.VISIBLE);
+			// 为alphaAnimation设置监听器
+			alphaAnimation.setAnimationListener(new AnimationListener() {
+
+				@Override
+				public void onAnimationEnd(Animation arg0) {
+					Log.v("向上", "onAnimationEnd");
+					imgDirect_up.setVisibility(ImageView.INVISIBLE);
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+
+				}
+
+				@Override
+				public void onAnimationStart(Animation animation) {
+					Log.v("向上", "onAnimationStart");
+					imgDirect_up.setVisibility(ImageView.VISIBLE);
+				}
+
+			});
+			imgDirect_up.startAnimation(alphaAnimation);
+			break;
+		case 1: // down
+			Log.v("向下", "向下");
+			imgDirect_down.setVisibility(ImageView.VISIBLE);
+			alphaAnimation.setAnimationListener(new AnimationListener() {
+				@Override
+				public void onAnimationEnd(Animation arg0) {
+					imgDirect_down.setVisibility(ImageView.INVISIBLE);
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+					// TODO Auto-generated method stub
+
+				}
+
+				@Override
+				public void onAnimationStart(Animation animation) {
+					imgDirect_down.setVisibility(ImageView.VISIBLE);
+				}
+			});
+			imgDirect_down.startAnimation(alphaAnimation);
+			break;
+		case 2: // left
+			Log.v("向左", "向左");
+			imgDirect_left.setVisibility(ImageView.VISIBLE);
+			alphaAnimation.setAnimationListener(new AnimationListener() {
+				@Override
+				public void onAnimationEnd(Animation arg0) {
+					imgDirect_left.setVisibility(ImageView.INVISIBLE);
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+					// TODO Auto-generated method stub
+
+				}
+
+				@Override
+				public void onAnimationStart(Animation animation) {
+					imgDirect_left.setVisibility(ImageView.VISIBLE);
+				}
+			});
+			imgDirect_left.startAnimation(alphaAnimation);
+			break;
+		case 3: // right
+			Log.v("向右", "向右");
+			imgDirect_right.setVisibility(ImageView.VISIBLE);
+			alphaAnimation.setAnimationListener(new AnimationListener() {
+				@Override
+				public void onAnimationEnd(Animation arg0) {
+					imgDirect_right.setVisibility(ImageView.INVISIBLE);
+				}
+
+				@Override
+				public void onAnimationRepeat(Animation animation) {
+					// TODO Auto-generated method stub
+
+				}
+
+				@Override
+				public void onAnimationStart(Animation animation) {
+					imgDirect_right.setVisibility(ImageView.VISIBLE);
+				}
+			});
+			imgDirect_right.startAnimation(alphaAnimation);
+			break;
+		default:
+			break;
+		}
+	}
+	
+	protected void setBarEnable(boolean b) {
+		if(b){
+			imgAlarm.setClickable(true);
+			imgStreamType.setClickable(true);
+			imgPlayOrStop.setClickable(true);
+			imgImage.setClickable(true);
+			imgRecorder.setClickable(true);
+			imgListener.setClickable(true);
+			imgSound.setClickable(true);
+		}else{
+			imgAlarm.setClickable(false);
+			imgStreamType.setClickable(false);
+			imgPlayOrStop.setClickable(false);
+			imgImage.setClickable(false);
+			imgRecorder.setClickable(false);
+			imgListener.setClickable(false);
+			imgSound.setClickable(false);
+		}
+	}
+
+	/**
+	 * 定时隐藏工具条
+	 */
+	private void timeDown(){
+		TimerTask task = new TimerTask(){
+			@Override
+			public void run() {
+				mHandler.sendEmptyMessage(MsgEnum.TIMEHIDDLEN);
+			}
+		};
+		Timer timer = new Timer();
+		timer.schedule(task, 20000);
+	}
+	
+	
+	/**
+	 * 操作工具条方法集合
+	 */
+	private View.OnClickListener ToolOnItemClickListener = new View.OnClickListener()
+	{
+
+		@Override
+		public void onClick(View v) {
+			recentClicked = true;
+			switch (v.getId()) {
+			case R.id.iv_alarm:			//布/撤防
+				alarmOpen();
+				break;
+			case R.id.iv_StreamType:	//标清/高清
+				ChangeStreamType();
+				break;
+			case R.id.iv_videoplay:		//播放/暂停
+				PlayAndPause();
+				break;
+			case R.id.iv_image:			//拍照
+				getCameraImage(v);
+				break;
+			case R.id.iv_rec:			//录像
+				new Tip(FullScreenPlayer.this).show();
+//				StartOrStopRecord();
+				break;
+			case R.id.iv_listenter:		//监听
+				if (vvplayer.isPlaying()) {
+					if(v.isSelected()){
+						v.setSelected(false);
+						// open voice
+						System.out.println("listen on");
+						AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
+						audioManager.setStreamMute(AudioManager.STREAM_MUSIC, false);
+					}else{
+						v.setSelected(true);
+						// close voice
+						System.out.println("listen off");
+						AudioManager audioManager = (AudioManager)getSystemService(AUDIO_SERVICE);
+						audioManager.setStreamMute(AudioManager.STREAM_MUSIC, true);
+					}
+				}else{
+					Toast.makeText(FullScreenPlayer.this, "视频尚未打开，请稍后再操作", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case R.id.iv_sound:			//对讲
+				if (vvplayer.isPlaying()) {
+					if(v.isSelected()){
+						v.setSelected(false);
+						// close talk
+					}else{
+						v.setSelected(true);
+						// open talk
+					}
+				}else{
+					Toast.makeText(FullScreenPlayer.this, "视频尚未打开，请稍后再操作", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case R.id.iv_bendiRec:		//本地录像
+				break;
+			default:
+				break;
+			}
+		}
+		
+	};
+	
+	/**
+	 * 初始化线程
+	 */
+	private void initThread()
+	{
+		thd = new Threadhandler(mHandler, cpr, baseurlString,"get");
+		thd.start();
+	}
+	
+	/**
+	 * 布/撤防
+	 */
+	private void alarmOpen()
+	{
+		thd = new Threadhandler(mHandler, cpr, baseurlString,"set");
+		thd.start();
+	}
+	
+	
+	/**
+	 * 拍照
+	 */
+	private void getCameraImage(View v) {
+		if(p2punitily.getSDPath() == null)
+		{
+			Toast.makeText(this, "没有SD卡或SD卡被拔出", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		if (!vvplayer.isPlaying() || strPlayURL == null) {
+			Toast.makeText(FullScreenPlayer.this, "请先打开视频，再执行拍照操作！", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		String mRoot = p2punitily.getSDPath() + "/" + P2pBaseUrl.DIR_ROOT;
+		String mRoot_image = mRoot + "/" + P2pBaseUrl.DIR_ROOT_IMAGE;
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss",Locale.US);
+		String fname = mRoot_image + "/" + sdf.format(new Date()) + ".png";
+		View view = v.getRootView();
+		view.setDrawingCacheEnabled(true);
+		view.buildDrawingCache();
+		Bitmap bitmap = view.getDrawingCache();
+		if (bitmap != null) {
+			try {
+				FileOutputStream out = new FileOutputStream(fname);
+				bitmap.compress(Bitmap.CompressFormat.PNG, 100, out);
+				out.close();
+				Toast.makeText(this, "拍照成功！" + fname, Toast.LENGTH_SHORT).show();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}else {
+			Toast.makeText(this, "拍照失败", Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	/**
+	 * 开始/停止手动录像
+	 */
+	private void StartOrStopRecord()
+	{
+		if (!vvplayer.isPlaying() || strPlayURL == null) {
+			Toast.makeText(FullScreenPlayer.this, "请先打开视频，再执行视频录像操作！", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		StartRecordRequest srr = new StartRecordRequest();
+		srr.setAccount(userIDString);
+		srr.setLoginSession(loginSession);
+		srr.setDevID(DevID);
+		srr.setChannelNo(Integer.parseInt(ChannelNo));
+		srr.setStreamType(1);
+		srr.setRecordFlag(0);
+		srr.setTimeLen(Integer.parseInt(sp.getString("TimeLen", "5")));
+		if(isIconChangeRecord)
+		{
+			thd = new Threadhandler(mHandler, srr, baseurlString, "StopRecord");
+		}
+		else {
+			thd = new Threadhandler(mHandler, srr, baseurlString, "StartRecord");
+		}
+		isIconChangeRecord = !isIconChangeRecord;
+		thd.start();
+	}
+	
+	/**
+	 * 标清/高清切换
+	 */
+	private void ChangeStreamType()
+	{
+		PlayURLRequest prt = new PlayURLRequest();
+		prt.setAccount(userIDString);
+		prt.setLoginSession(loginSession);
+		prt.setDevID(DevID);
+		prt.setChannelNo(Integer.parseInt(ChannelNo));
+		if(isIconChangeStreamType){
+			imgStreamType.setBackgroundResource(R.drawable.hd);
+			prt.setStreamType(1);//高清(主)
+			tvStreamType.setText("高清");
+		} else {
+			imgStreamType.setBackgroundResource(R.drawable.sd);
+			prt.setStreamType(2);//标清(子)
+			tvStreamType.setText("标清");
+		}
+		isIconChangeStreamType = !isIconChangeStreamType;
+		System.out.println("ChangeType: " + prt.getStreamType());
+		sp.edit().putBoolean("isIconChangeStreamType", isIconChangeStreamType).commit();
+		thd = new Threadhandler(mHandler, prt, baseurlString, "GetPlayUrl");
+		thd.start();
+	}
+	
+	/**
+	 * 播放/暂停
+	 */
+	private void PlayAndPause()
+	{
+		if (isIconChangePlayOrPause) {
+			imgPlayOrStop.setBackgroundResource(R.drawable.pause);
+			tvPlayOrStop.setText("暂停");
+			if (!vvplayer.isPlaying()) {
+				pb.setVisibility(ProgressBar.VISIBLE);
+				startPlayVideo(strPlayURL);
+			}
+
+		} else {
+			imgPlayOrStop.setBackgroundResource(R.drawable.play);
+			tvPlayOrStop.setText("播放");
+			if (vvplayer.isPlaying()) {
+				vvplayer.pause();
+				vvplayer.stopPlayback();
+			}
+		}
+		isIconChangePlayOrPause = !isIconChangePlayOrPause;
+		sp.edit().putBoolean("isIconChangePlayOrPause", isIconChangePlayOrPause).commit();
+	}
+	
+	
+
+	public class Tip {
+
+		private Button btnClose, btnDevice;
+	    private Dialog mDialog;
+
+	    public Tip(Context context) {
+	        mDialog = new Dialog(context, R.style.dialog);
+	        Window window = mDialog.getWindow();
+	        WindowManager.LayoutParams wl = window.getAttributes();
+	        wl.x = -20;
+	        wl.y = 20;
+	        window.setAttributes(wl);
+	        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+	                WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+	        window.setGravity(Gravity.CENTER);
+	        window.setLayout(ViewGroup.LayoutParams.FILL_PARENT,
+	                ViewGroup.LayoutParams.WRAP_CONTENT);
+	        mDialog.setContentView(R.layout.tip);
+	        mDialog.setFeatureDrawableAlpha(Window.FEATURE_OPTIONS_PANEL, 0);
+	        mDialog.setCanceledOnTouchOutside(true);//设置点击Dialog外部任意区域关闭Dialog
+	        btnClose = (Button) mDialog.findViewById(R.id.btnClose);
+	        btnClose.setOnClickListener(new ImageView.OnClickListener() {
+	            @Override
+	            public void onClick(View arg0) {
+	                mDialog.dismiss();
+	            }
+	        });
+	        btnDevice = (Button) mDialog.findViewById(R.id.btnDevice);
+	        btnDevice.setOnClickListener(new ImageView.OnClickListener() {
+	            @Override
+	            public void onClick(View arg0) {
+	            	StartOrStopRecord();
+	            }
+	        });
+	    }
+
+	    public void show() {
+	        mDialog.show();
+	    }
+	}
+	
+}

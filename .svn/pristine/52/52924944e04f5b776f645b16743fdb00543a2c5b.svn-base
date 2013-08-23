@@ -1,0 +1,567 @@
+﻿package cn.mw.p2p.handler;
+
+import android.os.Handler;
+import cn.mw.p2p.Request.AccountRequest;
+import cn.mw.p2p.Request.MonAddDevRequest;
+import cn.mw.p2p.Request.AddRecordPolicyRequest;
+import cn.mw.p2p.Request.ControlPtzRequest;
+import cn.mw.p2p.Request.DelRecordPolicyRequest;
+import cn.mw.p2p.Request.DevRecordFileSelectRequest;
+import cn.mw.p2p.Request.GetDevParamRequest;
+import cn.mw.p2p.Request.GetEAccountRequest;
+import cn.mw.p2p.Request.GetPwdRequest;
+import cn.mw.p2p.Request.GetSysLogRequest;
+import cn.mw.p2p.Request.LoginRequest;
+import cn.mw.p2p.Request.MobileRegisterRequest;
+import cn.mw.p2p.Request.PlayURLRequest;
+import cn.mw.p2p.Request.SafeRequest;
+import cn.mw.p2p.Request.SetDevParamRequest;
+import cn.mw.p2p.Request.SetEAccountRequest;
+import cn.mw.p2p.Request.StartRecordRequest;
+import cn.mw.p2p.adpter.DeviceAdapter;
+import cn.mw.p2p.handler.MethodListCount;
+import cn.mw.p2p.unitily.MsgEnum;
+
+/**
+ * 线程操作类
+ */
+public class Threadhandler extends Thread {
+	
+	private Handler mHandler = null;
+	private String baseUrl = null;	//基础URL
+	private int FunType = MsgEnum.LOGIN_FUNCTION;		//方法类型
+	private DeviceAdapter dp;
+	private GetDevParamRequest gpr;
+	private SetDevParamRequest spr;
+	private MonAddDevRequest adr;
+	private GetPwdRequest gdr;
+	private GetEAccountRequest ger;
+	private SetEAccountRequest ser;
+	private SafeRequest sr;
+	private MobileRegisterRequest mrr;
+	private DelRecordPolicyRequest dpr;
+	private AddRecordPolicyRequest apr;
+	private ControlPtzRequest cpr;
+	private StartRecordRequest srr;
+	private GetSysLogRequest glr;
+	private AccountRequest art;
+	private DevRecordFileSelectRequest dfr;
+	private PlayURLRequest prt;
+	private LoginRequest lr;
+
+
+	/**
+	 * 用户登录
+	 * @param h 处理对象
+	 * @param StrbaseUrl 基础URL
+	 * @param userID 用户ID
+	 * @param userPwd 用户密码
+	 * @param PwdType 密码类型 0—通用密码，1—随机密码
+	 */
+	public Threadhandler(Handler h, LoginRequest lr, String StrbaseUrl, DeviceAdapter dp) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.lr = lr;
+		this.dp = dp;
+		FunType = MsgEnum.LOGIN_FUNCTION;
+	}
+	
+	/**
+	 * 刷新设备列表
+	 * @param h
+	 * @param adr
+	 * @param StrbaseUrl
+	 * @param dp
+	 */
+	public Threadhandler(Handler h, MonAddDevRequest adr, String StrbaseUrl, DeviceAdapter dp) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.adr = adr;
+		this.dp = dp;
+		FunType = MsgEnum.REFDEV_FUNCTION;
+	}
+	
+	/**
+	 * 视频播放地址
+	 * @param h
+	 * @param point 设备对象
+	 * @param StrbaseUrl 基础URL
+	 * @param userID 用户ID
+	 */
+	public Threadhandler(Handler h, PlayURLRequest prt,String StrbaseUrl,String functionName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.prt = prt;
+		if (functionName.equals("GetPlayUrl")) {
+			FunType = MsgEnum.PLAYURL_FUNCTION;
+		} else {
+			FunType = MsgEnum.PLAYRECORDURL_FUNCTION;
+		}
+	}
+		
+	/**
+	 * 设置设备参数和名称
+	 * @param h
+	 * @param spr
+	 * @param StrbaseUrl
+	 * @param overrideFunction
+	 */
+	public Threadhandler(Handler h, SetDevParamRequest spr,String StrbaseUrl,String funName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.spr = spr;
+		if (funName.equals("SetDevParam")) {
+			FunType = MsgEnum.SETPARAM_FUNCTION;
+		} else {
+			FunType = MsgEnum.SETDEVNAME_FUNCTION;
+		}
+	}
+	
+	/**
+	 * 查询设备配置
+	 * @param h
+	 * @param gpr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, GetDevParamRequest gpr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.gpr = gpr;
+		FunType = MsgEnum.GETPARAM_FUNCTION;
+	}
+	
+	/**
+	 * 添加设备
+	 * @param h
+	 * @param adr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, MonAddDevRequest adr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.adr = adr;
+		FunType = MsgEnum.ADDDEV_FUNCTION;
+	}
+	
+	/**
+	 * 删除设备
+	 * @param h
+	 * @param adr
+	 * @param StrbaseUrl
+	 * @param delString
+	 */
+	public Threadhandler(Handler h, MonAddDevRequest adr,String StrbaseUrl,String delString) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.adr = adr;
+		FunType = MsgEnum.DELDEV_FUNCTION;
+	}
+	
+	/**
+	 * 动态获取密码
+	 * @param h
+	 * @param gdr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, GetPwdRequest gdr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.gdr = gdr;
+		FunType = MsgEnum.GETPWD_FUNCTION;
+	}
+	
+	/**
+	 * 查询E云帐户
+	 * @param h
+	 * @param ger
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, GetEAccountRequest ger,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.ger = ger;
+		FunType = MsgEnum.GETEACCOUNT_FUNCTION;
+	}
+	
+	/**
+	 * 设置E云帐户
+	 * @param h
+	 * @param ser
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, SetEAccountRequest ser,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.ser = ser;
+		FunType = MsgEnum.SETEACCOUNT_FUNCTION;
+	}
+	
+	/**
+	 * 设置安全策略
+	 * @param h
+	 * @param sr
+	 * @param StrbaseUrl
+	 * @param funName
+	 */
+	public Threadhandler(Handler h, SafeRequest sr,String StrbaseUrl,String funName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.sr = sr;
+		if(funName.equals("SetDevKey"))
+		{
+			FunType = MsgEnum.SETDEVKEY_FUNCTION;
+		}
+		else if (funName.equals("SetMaxLineNum")) {
+			FunType = MsgEnum.SETMAXLINENUM_FUNCTION;
+		}
+		else {
+			FunType = MsgEnum.REBOOTDEV_FUNCTION;
+		}
+	}
+	
+	/**
+	 * 用户注册
+	 * @param h
+	 * @param mrr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, MobileRegisterRequest mrr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.mrr = mrr;
+		FunType = MsgEnum.REG_FUNCTION;
+	}
+	
+	/**
+	 * 获取录像策略/获取设备通道名称
+	 * @param h
+	 * @param gpr
+	 * @param StrbaseUrl
+	 * @param strovrride
+	 */
+	public Threadhandler(Handler h, GetDevParamRequest gpr,String StrbaseUrl,String funName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.gpr = gpr;
+		if(funName.equals("MonGetDevName"))
+		{
+			FunType = MsgEnum.GETDEVCHANNELNAME_FUNCTION;
+		}
+		else {
+			FunType = MsgEnum.GETRECPOLICY_FUNCTION;
+		}
+		
+	}
+	
+	/**
+	 * 删除录像策略
+	 * @param h
+	 * @param dpr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, DelRecordPolicyRequest dpr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.dpr = dpr;
+		FunType = MsgEnum.DELRECPOLICY_FUNCTION;
+	}
+	
+	/**
+	 * 添加录像策略
+	 * @param h
+	 * @param apr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, AddRecordPolicyRequest apr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.apr = apr;
+		FunType = MsgEnum.ADDRECPOLICY_FUNCTION;
+	}
+	
+	/**
+	 * 云台控制
+	 * @param h
+	 * @param cpr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, ControlPtzRequest cpr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.cpr = cpr;
+		FunType = MsgEnum.CONTROLPTZ_FUNCTION;
+	}
+	
+	/**
+	 * 开始/停止录像
+	 * @param h
+	 * @param srr
+	 * @param StrbaseUrl
+	 * @param funName
+	 */
+	public Threadhandler(Handler h, StartRecordRequest srr,String StrbaseUrl,String funName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.srr = srr;
+		if (funName.equals("StartRecord")) {
+			FunType = MsgEnum.STARTREC_FUNCTION;
+		} else {
+			FunType = MsgEnum.STOPREC_FUNCTION;
+		}
+	}
+	
+	/**
+	 * 获取系统日志和远程升级通知和设备固件版本查询
+	 * @param h
+	 * @param glr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, GetSysLogRequest glr,String StrbaseUrl,String functionName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.glr = glr;
+		if (functionName.equals("GetSysLog")) {
+			FunType = MsgEnum.GETSYSLOG_FUNCTION;
+		} else if (functionName.equals("NotifyUpgrade")) {
+			FunType = MsgEnum.UPGRADE_FUNCTION;
+		} else {
+			FunType = MsgEnum.GETDEVESION_FUNCTION;
+		}
+	}
+	
+	/**
+	 * 布撤防状态查询和设置
+	 * @param h
+	 * @param cprt
+	 * @param StrbaseUrl
+	 * @param functionName
+	 */
+	public Threadhandler(Handler h, ControlPtzRequest cprt, String StrbaseUrl,String functionName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.cpr = cprt;
+		if (functionName.equals("get")) {
+			FunType = MsgEnum.GETALARMSTATUS_FUNCTION;
+		} else {
+			FunType = MsgEnum.SETALARMSTATUS_FUNCTION;
+		}
+	}
+	
+	/**
+	 * 用户手机号码查询和修改/用户密码修改
+	 * @param h
+	 * @param art
+	 * @param StrbaseUrl
+	 * @param functionName
+	 */
+	public Threadhandler(Handler h, AccountRequest art, String StrbaseUrl,String functionName) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.art = art;
+		if (functionName.equals("get")) {
+			FunType = MsgEnum.SELECTUSERINFO_FUNCTION;
+		} else if(functionName.equals("set")){
+			FunType = MsgEnum.UPDATEUSERINFO_FUNCTION;
+		}
+		else {
+			FunType = MsgEnum.SETUSERKEY_FUNCTION;
+		}
+	}
+	
+	/**
+	 * 设备录像文件查询
+	 * @param h
+	 * @param dfr
+	 * @param StrbaseUrl
+	 */
+	public Threadhandler(Handler h, DevRecordFileSelectRequest dfr,String StrbaseUrl) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.dfr = dfr;
+		FunType = MsgEnum.SELECTDEVRECOR_FUNCTION;
+	}
+	
+	/**
+	 * 获取手机验证码
+	 * @param h
+	 * @param gdr
+	 * @param StrbaseUrl
+	 * @param overrideParam
+	 */
+	public Threadhandler(Handler h, GetPwdRequest gdr,String StrbaseUrl,String overrideParam) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.gdr = gdr;
+		FunType = MsgEnum.GETAUTHCODE_FUNCTION;
+	}
+	
+	/**
+	 * 添加设备分享/取消设备分享
+	 * @param h
+	 * @param adr
+	 * @param StrbaseUrl
+	 * @param fucname
+	 * @param overrideParam
+	 */
+	public Threadhandler(Handler h, MonAddDevRequest adr,String StrbaseUrl,String fucname,String overrideParam) {
+
+		this.mHandler = h;
+		this.baseUrl = StrbaseUrl;
+		this.adr = adr;
+		if (fucname.equals("add")) {
+			FunType = MsgEnum.ADDSHARE_FUNCTION;
+		}
+		else {
+			FunType = MsgEnum.CANCELSHARE_FUNCTION;
+		}
+		
+	}
+	
+	
+	
+
+	/**
+	 * 线程的执行方法
+	 */
+	public void run()
+	{
+		switch (FunType) {
+		case MsgEnum.LOGIN_FUNCTION://登录方法
+			MethodListCount.LoginThread(mHandler, lr, baseUrl, dp);
+			break;
+		case MsgEnum.REFDEV_FUNCTION://刷新设备列表
+			MethodListCount.Ref_DevList(mHandler, adr, baseUrl, dp);
+			break;
+		case MsgEnum.PLAYURL_FUNCTION://获取视频播放地址
+			MethodListCount.getPlayURL(mHandler, prt, baseUrl, "GetPlayUrl");
+			break;
+		case MsgEnum.PLAYRECORDURL_FUNCTION://获取设备录像文件地址
+			MethodListCount.getPlayURL(mHandler, prt, baseUrl, "MonGetRecordPlayUrl");
+			break;
+		case MsgEnum.GETPARAM_FUNCTION://获取设备配置参数
+			MethodListCount.getDeviceParam(mHandler, gpr, baseUrl);
+			break;
+		case MsgEnum.GETDEVCHANNELNAME_FUNCTION://获取设备通道名称
+			MethodListCount.getDeviceChannelName(mHandler, gpr, baseUrl);
+			break;
+		case MsgEnum.SETPARAM_FUNCTION://设置设备参数
+			MethodListCount.setDeviceParam(mHandler, spr, baseUrl, "SetDevParam");
+			break;
+		case MsgEnum.SETDEVNAME_FUNCTION://设置设备名称
+			MethodListCount.setDeviceParam(mHandler, spr, baseUrl, "SetDevName");
+			break;
+		case MsgEnum.ADDDEV_FUNCTION://添加设备
+			MethodListCount.addDevice(mHandler, adr, baseUrl);
+			break;
+		case MsgEnum.DELDEV_FUNCTION://删除设备
+			MethodListCount.delDevice(mHandler, adr, baseUrl);
+			break;
+		case MsgEnum.GETPWD_FUNCTION://动态获取密码
+			MethodListCount.getpwd(mHandler, gdr, baseUrl);
+			break;
+		case MsgEnum.GETEACCOUNT_FUNCTION://查询E云帐户
+			MethodListCount.getEAccount(mHandler, ger, baseUrl);
+			break;
+		case MsgEnum.SETEACCOUNT_FUNCTION://设置E云帐户
+			MethodListCount.setEAccount(mHandler, ser, baseUrl);
+			break;
+		case MsgEnum.SETDEVKEY_FUNCTION://设置设备密码
+			MethodListCount.setSafePolicy(mHandler, sr, baseUrl, "SetDevKey");
+			break;
+		case MsgEnum.SETMAXLINENUM_FUNCTION://设置同时观看人数
+			MethodListCount.setSafePolicy(mHandler, sr, baseUrl, "SetMaxLineNum");
+			break;
+		case MsgEnum.REBOOTDEV_FUNCTION://重启摄像机
+			MethodListCount.setSafePolicy(mHandler, sr, baseUrl, "RebootDev");
+			break;
+		case MsgEnum.REG_FUNCTION://用户注册
+			MethodListCount.MobileRegister(mHandler, mrr, baseUrl);
+			break;
+		case MsgEnum.GETRECPOLICY_FUNCTION://获取录像策略
+			MethodListCount.GetRecordPolicy(mHandler, gpr, baseUrl);
+			break;
+		case MsgEnum.DELRECPOLICY_FUNCTION://删除录像策略
+			MethodListCount.DetRecordPolicy(mHandler, dpr, baseUrl);
+			break;
+		case MsgEnum.ADDRECPOLICY_FUNCTION://添加录像策略
+			MethodListCount.AddRecordPolicy(mHandler, apr, baseUrl);
+			break;
+		case MsgEnum.CONTROLPTZ_FUNCTION://云台控制
+			MethodListCount.controlPTZ(mHandler, cpr, baseUrl);
+			break;
+		case MsgEnum.STARTREC_FUNCTION://开始录像
+			MethodListCount.RecoredVideo(mHandler, srr, baseUrl, "StartRecord");
+			break;
+		case MsgEnum.STOPREC_FUNCTION://停止录像
+			MethodListCount.RecoredVideo(mHandler, srr, baseUrl, "StopRecord");
+			break;
+		case MsgEnum.GETSYSLOG_FUNCTION://查询系统日志
+			MethodListCount.getSysLog(mHandler, glr, baseUrl);
+			break;
+		case MsgEnum.UPGRADE_FUNCTION://远程升级
+			MethodListCount.NotifyUpgrade(mHandler, glr, baseUrl, "NotifyUpgrade");
+			break;
+		case MsgEnum.GETDEVESION_FUNCTION://版本查询
+			MethodListCount.NotifyUpgrade(mHandler, glr, baseUrl, "GetDevVersion");
+			break;
+		case MsgEnum.GETALARMSTATUS_FUNCTION://查询布防状态
+			MethodListCount.AlarmStatus(mHandler, cpr, baseUrl, "get");
+			break;
+		case MsgEnum.SETALARMSTATUS_FUNCTION://设置布防状态
+			MethodListCount.AlarmStatus(mHandler, cpr, baseUrl, "set");
+			break;
+		case MsgEnum.SELECTUSERINFO_FUNCTION://查询用户信息
+			MethodListCount.AccountControl(mHandler, art, baseUrl, "get");
+			break;
+		case MsgEnum.UPDATEUSERINFO_FUNCTION://修改用户信息
+			MethodListCount.AccountControl(mHandler, art, baseUrl, "set");
+			break;
+		case MsgEnum.SETUSERKEY_FUNCTION://修改用户密码
+			MethodListCount.AccountControl(mHandler, art, baseUrl, "SetUserKey");
+			break;
+		case MsgEnum.SELECTDEVRECOR_FUNCTION://获取设备录像文件
+			MethodListCount.getDevRecList(mHandler, dfr, baseUrl);
+			break;
+		case MsgEnum.GETAUTHCODE_FUNCTION://获取手机验证码
+			MethodListCount.getAuthCode(mHandler, gdr, baseUrl);
+			break;
+		case MsgEnum.ADDSHARE_FUNCTION://添加设备分享
+			MethodListCount.ShareDevControl(mHandler, adr, baseUrl, "add");
+			break;
+		case MsgEnum.CANCELSHARE_FUNCTION://取消设备分享
+			MethodListCount.ShareDevControl(mHandler, adr, baseUrl, "cancel");
+			break;
+		default:
+			break;
+		}
+		
+	}
+	
+	
+	
+	
+
+	
+}
